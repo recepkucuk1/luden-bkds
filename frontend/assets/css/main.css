@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobil iOS'ta tap highlight'ı kapat */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  background: #ffffff;
+  color: #111827;
+}

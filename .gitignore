@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+
+# Backend
+backend/.data/
+backend/dist/
+
+# Tauri dev mode data (config.json plaintext şifre içerebilir, asla commit edilmez)
+desktop/.data/
+desktop/src-tauri/.data/
+
+# Frontend
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+
+# Desktop / Tauri
+desktop/src-tauri/target/
+desktop/src-tauri/binaries/
+desktop/src-tauri/dist-frontend/
+desktop/src-tauri/gen/
+
+# Env files (gerçek secret'lar)
+.env
+.env.local
+backend/.env
+frontend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Build artifacts
+*.dmg
+*.msi
+*.exe
+*.app
+
+# Apple
+*.cer
+*.p12
+*.provisionprofile
+
+# Tauri signing keys (üretim signing key home dir'de, repo'da olmamalı)
+.tauri/
+*.key
+*.key.pub

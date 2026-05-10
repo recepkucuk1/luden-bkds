@@ -1,0 +1,28 @@
+{
+  "name": "luden-bkds-desktop",
+  "version": "0.1.0",
+  "description": "Luden BKDS Desktop — Tauri uygulaması (backend + frontend gömülü)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:node": "node scripts/copy-node.js",
+    "build:backend": "node scripts/build-backend.js",
+    "build:frontend": "cd ../frontend && npm run generate && node ../desktop/scripts/copy-frontend.js",
+    "build:all": "npm run build:node && npm run build:backend && npm run build:frontend",
+    "prepare:dev": "npm run build:all"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0",
+    "esbuild": "^0.24.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.1.0",
+    "@tauri-apps/plugin-updater": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.0.0",
+    "@tauri-apps/plugin-autostart": "^2.0.0",
+    "@tauri-apps/plugin-notification": "^2.0.0"
+  }
+}
