@@ -29,7 +29,31 @@ use tauri::{
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::{CommandEvent, CommandChild};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
+use std::path::PathBuf;
+use std::io::Write;
+
+// Log file path — set in setup(), used by tlog!()
+static LOG_PATH: OnceLock<PathBuf> = OnceLock::new();
+
+/// Hem stdout'a (terminal build'de görünür) hem app_data_dir/tauri.log'a yazar.
+/// Windows release build'inde stdout görünmediği için kritik debug aracı.
+fn tlog(msg: &str) {
+    println!("[tauri] {}", msg);
+    if let Some(path) = LOG_PATH.get() {
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+        {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let _ = writeln!(f, "[{}] {}", now, msg);
+        }
+    }
+}
 
 /// Wrapper: Mutex ile child process tutar. Drop'ta otomatik kill çağrılır.
 struct ServerProcess(Mutex<Option<CommandChild>>);
@@ -111,6 +135,12 @@ pub fn run() {
             // Klasör yoksa oluştur
             std::fs::create_dir_all(&app_data_dir).ok();
 
+            // Log dosyasını ayarla — tüm Tauri lifecycle event'leri buraya yazılır.
+            // macOS: ~/Library/Application Support/com.ludenlab.bkds/tauri.log
+            // Windows: %APPDATA%\com.ludenlab.bkds\tauri.log
+            // Sorun bildiren kullanıcıdan bu dosyayı isteyebilirsin.
+            LOG_PATH.set(app_data_dir.join("tauri.log")).ok();
+
             let frontend_dist = resource_dir.join("dist-frontend");
             let server_script = resource_dir.join("binaries").join("server.mjs");
             let node_binary_name = if cfg!(target_os = "windows") {
@@ -120,16 +150,25 @@ pub fn run() {
             };
             let node_runtime = resource_dir.join("binaries").join(node_binary_name);
 
-            let frontend_dist_str = frontend_dist.to_string_lossy().to_string();
-            let server_script_str = server_script.to_string_lossy().to_string();
-            let node_runtime_str = node_runtime.to_string_lossy().to_string();
-            let app_data_dir_str = app_data_dir.to_string_lossy().to_string();
+            // KRİTİK: Tauri shell capability glob'u forward slash kullanır.
+            // Windows'ta PathBuf.to_string_lossy() backslash döner ve glob match
+            // FAIL eder → spawn sessizce reddedilir → backend başlamaz.
+            // Path'leri forward slash'a çeviriyoruz; Windows API zaten ikisini de kabul ediyor.
+            let normalize = |p: &std::path::Path| -> String {
+                p.to_string_lossy().replace('\\', "/")
+            };
+            let frontend_dist_str = normalize(&frontend_dist);
+            let server_script_str = normalize(&server_script);
+            let node_runtime_str = normalize(&node_runtime);
+            let app_data_dir_str = app_data_dir.to_string_lossy().to_string(); // env var, native ok
 
-            println!("[tauri] Frontend dist: {}", frontend_dist_str);
-            println!("[tauri] Backend script: {}", server_script_str);
-            println!("[tauri] Node runtime: {}", node_runtime_str);
-            println!("[tauri] App data dir: {}", app_data_dir_str);
-            println!("[tauri] Auto-start ile mi başladı: {}", started_via_autostart);
+            tlog(&format!("Frontend dist: {}", frontend_dist_str));
+            tlog(&format!("Backend script: {}", server_script_str));
+            tlog(&format!("Node runtime: {}", node_runtime_str));
+            tlog(&format!("App data dir: {}", app_data_dir_str));
+            tlog(&format!("Auto-start ile mi başladı: {}", started_via_autostart));
+            tlog(&format!("node-runtime dosyası var mı: {}", node_runtime.exists()));
+            tlog(&format!("server.mjs dosyası var mı: {}", server_script.exists()));
 
             // Backend'i başlat
             let shell = app.shell();
@@ -140,36 +179,46 @@ pub fn run() {
                 .env("LUDEN_DATA_DIR", &app_data_dir_str)
                 .env("PORT", "8787");
 
-            let (mut rx, child) = cmd
-                .spawn()
-                .expect("backend başlatılamadı (gömülü node-runtime çalışmadı)");
+            // Spawn fail edebilir (capability ihlali, exec hatası) — panic etme, log'la.
+            // Backend olmasa bile Tauri açılır → kullanıcı log dosyasını paylaşabilir.
+            match cmd.spawn() {
+                Ok((mut rx, child)) => {
+                    let pid = child.pid();
+                    tlog(&format!("backend spawn OK, pid={}", pid));
 
-            println!("[tauri] backend başlatıldı, pid={}", child.pid());
+                    // State'e kaydet
+                    let state: tauri::State<Arc<ServerProcess>> = app.state();
+                    state.set(child);
 
-            // State'e kaydet
-            let state: tauri::State<Arc<ServerProcess>> = app.state();
-            state.set(child);
-
-            // Backend log'larını yönlendir
-            tauri::async_runtime::spawn(async move {
-                while let Some(event) = rx.recv().await {
-                    match event {
-                        CommandEvent::Stdout(line) => {
-                            print!("[backend] {}", String::from_utf8_lossy(&line));
+                    // Backend log'larını yönlendir → hem stdout hem dosyaya
+                    tauri::async_runtime::spawn(async move {
+                        while let Some(event) = rx.recv().await {
+                            match event {
+                                CommandEvent::Stdout(line) => {
+                                    let s = String::from_utf8_lossy(&line);
+                                    tlog(&format!("[backend] {}", s.trim_end()));
+                                }
+                                CommandEvent::Stderr(line) => {
+                                    let s = String::from_utf8_lossy(&line);
+                                    tlog(&format!("[backend!] {}", s.trim_end()));
+                                }
+                                CommandEvent::Error(err) => {
+                                    tlog(&format!("[backend error] {}", err));
+                                }
+                                CommandEvent::Terminated(payload) => {
+                                    tlog(&format!("[backend] kapandı: code={:?}", payload.code));
+                                }
+                                _ => {}
+                            }
                         }
-                        CommandEvent::Stderr(line) => {
-                            eprint!("[backend!] {}", String::from_utf8_lossy(&line));
-                        }
-                        CommandEvent::Error(err) => {
-                            eprintln!("[backend error] {}", err);
-                        }
-                        CommandEvent::Terminated(payload) => {
-                            eprintln!("[backend] kapandı: code={:?}", payload.code);
-                        }
-                        _ => {}
-                    }
+                    });
                 }
-            });
+                Err(e) => {
+                    tlog(&format!("[FATAL] backend spawn başarısız: {}", e));
+                    tlog("Sebepler: capability ihlali, exec yetkisi yok, dosya bozuk, antivirus engeli.");
+                    // Devam et — Tauri penceresi açılır, kullanıcı log dosyasını paylaşabilir.
+                }
+            }
 
             // ── Tray icon ────────────────────────────────────────
             // Pencere kapatılınca uygulama gizlenir, ama tray'den her zaman geri açılır.
