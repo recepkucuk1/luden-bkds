@@ -150,12 +150,17 @@ pub fn run() {
             };
             let node_runtime = resource_dir.join("binaries").join(node_binary_name);
 
-            // KRİTİK: Tauri shell capability glob'u forward slash kullanır.
-            // Windows'ta PathBuf.to_string_lossy() backslash döner ve glob match
-            // FAIL eder → spawn sessizce reddedilir → backend başlamaz.
-            // Path'leri forward slash'a çeviriyoruz; Windows API zaten ikisini de kabul ediyor.
+            // KRİTİK Windows path normalize:
+            //  1. `\\?\` extended-length prefix STRIP edilmeli — Tauri'nin resource_dir()'i
+            //     uzun-path için bu prefix'i ekler. Node'a bu form geçtiğinde path parsing
+            //     yanlış gidiyor (`EISDIR lstat 'C:'` hatası).
+            //  2. Backslash'ları forward slash'a çevir — Tauri shell capability glob
+            //     forward slash bekler; Windows API ikisini de kabul eder.
             let normalize = |p: &std::path::Path| -> String {
-                p.to_string_lossy().replace('\\', "/")
+                let s = p.to_string_lossy().to_string();
+                // raw string r"\\?\" → 4 bayt: backslash + backslash + ? + backslash
+                let s = s.strip_prefix(r"\\?\").map(String::from).unwrap_or(s);
+                s.replace('\\', "/")
             };
             let frontend_dist_str = normalize(&frontend_dist);
             let server_script_str = normalize(&server_script);
