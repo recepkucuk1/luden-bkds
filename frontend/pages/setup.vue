@@ -439,6 +439,16 @@ const stepNumber = computed(() => {
               Telefon kurum WiFi'sinde olmalı. Kod 10 dakika geçerli; yenisi
               gerekirse Ayarlar → Cihaz Eşleştirme.
             </p>
+
+            <p
+              v-if="network.isWindowsTauri.value"
+              class="text-[11px] text-amber-800 bg-amber-50 rounded-lg p-2 leading-relaxed"
+            >
+              <strong>Windows kullanıyorsanız:</strong> ilk açılışta Windows
+              Firewall <strong>"brytakip-backend ağa erişim istiyor"</strong> sorusu
+              gösterebilir. <strong>"Erişime izin ver"</strong> tıklayın — yoksa
+              telefon bağlanamaz.
+            </p>
           </div>
 
           <!-- Diğer ipuçları -->

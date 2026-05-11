@@ -353,6 +353,20 @@ const notInSecureContext = computed(() => {
               {{ alt }}
             </div>
           </div>
+
+          <!-- Windows Firewall uyarısı — sadece Windows Tauri'de -->
+          <div
+            v-if="network.isWindowsTauri.value"
+            class="mt-2 text-[11px] text-amber-800 bg-amber-50 rounded-lg p-2 leading-relaxed"
+          >
+            <p class="font-medium mb-0.5">⚠ Windows Firewall</p>
+            <p>
+              Telefon bağlanamıyorsa Firewall blokluyor olabilir. Başlat →
+              <strong>Windows Defender Güvenlik Duvarı</strong> → "Bir uygulamaya izin ver" → listede
+              <strong>brytakip-backend</strong>'i bul, <strong>Özel</strong> ve
+              <strong>Genel</strong> kutularını işaretle.
+            </p>
+          </div>
         </div>
 
         <!-- Adım 2: pair code -->

@@ -42,7 +42,7 @@
     "resources": [
       "dist-frontend/**/*",
       "binaries/server.mjs",
-      "binaries/node-runtime*"
+      "binaries/brytakip-backend*"
     ],
     "copyright": "© 2026 LudenLab",
     "category": "Productivity",

@@ -46,7 +46,10 @@ if (!existsSync(nodeBinary)) {
   process.exit(1);
 }
 
-const targetName = platform === 'win32' ? 'node-runtime.exe' : 'node-runtime';
+// brytakip-backend adı seçildi: Windows Firewall sorusu / Görev Yöneticisi
+// "brytakip-backend.exe" görünür; kullanıcı app'le bağlantı kurar, anlamsız
+// "node-runtime.exe" görmek yerine "İzin ver" der.
+const targetName = platform === 'win32' ? 'brytakip-backend.exe' : 'brytakip-backend';
 const target = resolve(outDir, targetName);
 
 console.log('→ Node binary kopyalanıyor...');

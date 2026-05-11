@@ -30,5 +30,13 @@ export const useNetworkInfo = () => {
   // Tek bir "tercih edilen" URL — UI'da büyük göstermek için
   const primaryUrl = computed(() => urls.value[0] ?? null);
 
-  return { urls, primaryUrl, loading, refresh };
+  // Windows Tauri context'inde Firewall uyarısı gösterilsin
+  const isWindowsTauri = computed(() => {
+    if (typeof window === 'undefined') return false;
+    const inTauri = '__TAURI_INTERNALS__' in window || '__TAURI__' in window;
+    if (!inTauri) return false;
+    return /Windows|Win64/.test(navigator.userAgent);
+  });
+
+  return { urls, primaryUrl, loading, refresh, isWindowsTauri };
 };

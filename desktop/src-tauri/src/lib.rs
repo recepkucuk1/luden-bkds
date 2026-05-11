@@ -170,9 +170,9 @@ pub fn run() {
             let frontend_dist = resource_dir.join("dist-frontend");
             let server_script = resource_dir.join("binaries").join("server.mjs");
             let node_binary_name = if cfg!(target_os = "windows") {
-                "node-runtime.exe"
+                "brytakip-backend.exe"
             } else {
-                "node-runtime"
+                "brytakip-backend"
             };
             let node_runtime = resource_dir.join("binaries").join(node_binary_name);
 
