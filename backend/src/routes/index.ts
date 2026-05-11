@@ -32,6 +32,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { networkInterfaces } from 'node:os';
 import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from '../services/cache.js';
 import type { PresenceService } from '../services/presence.js';
@@ -88,6 +89,7 @@ const LOCALHOST_ONLY_PATHS = new Set<string>([
   '/api/auth/rotate-pair-code',
   '/api/auth/devices',
   '/api/auth/revoke-all',
+  '/api/network/info',
 ]);
 
 export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Promise<void> {
@@ -208,6 +210,26 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
     code: authService.forceRotateCode(),
     expiresAt: new Date(authService.getPairCodeExpiry()).toISOString(),
   }));
+
+  // ─── Network info (localhost-only) ─────────────────────────
+  // Telefondan bağlanmak için kullanıcıya gösterilecek Mac/PC LAN IP'si.
+  // Birden çok arayüz olabilir (Wi-Fi en0, ethernet en1, vb.) — hepsi döner,
+  // UI ilk geçerli olanı belirgin gösterir.
+  app.get('/api/network/info', async () => {
+    const port = Number(process.env.PORT ?? 8787);
+    const ifaces = networkInterfaces();
+    const urls: string[] = [];
+    for (const name of Object.keys(ifaces)) {
+      const list = ifaces[name];
+      if (!list) continue;
+      for (const net of list) {
+        if (net.family === 'IPv4' && !net.internal) {
+          urls.push(`http://${net.address}:${port}`);
+        }
+      }
+    }
+    return { port, urls };
+  });
 
   app.get('/api/auth/devices', async () => ({
     count: authService.tokenCount(),

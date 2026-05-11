@@ -5,8 +5,20 @@ definePageMeta({
 
 const { backendUrl } = useBkds();
 const autostart = useAutostart();
+const network = useNetworkInfo();
 const router = useRouter();
 const route = useRoute();
+
+// Done step için pair code çek
+const pairCode = ref<string | null>(null);
+const fetchPairCode = async () => {
+  try {
+    const r = await $fetch<{ code: string }>(`${backendUrl}/api/auth/pair-code`);
+    pairCode.value = r.code;
+  } catch {
+    pairCode.value = null;
+  }
+};
 
 // Düzenleme modu — Settings'ten gelinmiş, karşılamayı atla
 const isEdit = computed(() => route.query.edit === '1');
@@ -84,6 +96,8 @@ const submitCredentials = async () => {
     if (isEdit.value) {
       router.replace('/');
     } else {
+      // Done step'te göstermek üzere network info + pair code çek
+      await Promise.all([network.refresh(), fetchPairCode()]);
       currentStep.value = 'done';
     }
   } catch (err: any) {
@@ -392,23 +406,46 @@ const stepNumber = computed(() => {
             BKDS verileriniz şu an telefonunuzdan da erişilebilir. Birkaç ipucu:
           </p>
 
-          <div class="space-y-3 mb-6">
-            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                1
-              </span>
-              <div>
-                <p class="text-sm font-medium text-gray-900">Telefondan bağlanmak için</p>
-                <p class="text-[12px] text-gray-600 leading-relaxed mt-0.5">
-                  Telefonun tarayıcısından bilgisayarın yerel IP'sine gidin.
-                  Ayarlar → Cihaz Eşleştirme'den 6 haneli kodu okuyup girersiniz.
-                </p>
+          <!-- Telefondan bağlanma bilgisi — büyük + actionable -->
+          <div
+            v-if="network.primaryUrl.value || pairCode"
+            class="bg-gray-50 rounded-xl p-4 mb-5 space-y-3"
+          >
+            <p class="text-sm font-medium text-gray-900">
+              Telefonunuzu şimdi bağlayabilirsiniz
+            </p>
+
+            <div v-if="network.primaryUrl.value">
+              <p class="text-[11px] text-gray-600 mb-1">
+                <strong class="text-gray-700">1.</strong>
+                Telefonun tarayıcısında bu adrese gidin:
+              </p>
+              <div class="font-mono text-[13px] text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-2 select-all break-all">
+                {{ network.primaryUrl.value }}
               </div>
             </div>
 
+            <div v-if="pairCode">
+              <p class="text-[11px] text-gray-600 mb-1">
+                <strong class="text-gray-700">2.</strong>
+                Telefonda bu kodu girin:
+              </p>
+              <div class="text-center text-2xl font-mono font-semibold tracking-[0.3em] text-brand bg-white py-2.5 rounded-lg select-all">
+                {{ pairCode }}
+              </div>
+            </div>
+
+            <p class="text-[11px] text-gray-500 leading-relaxed">
+              Telefon kurum WiFi'sinde olmalı. Kod 10 dakika geçerli; yenisi
+              gerekirse Ayarlar → Cihaz Eşleştirme.
+            </p>
+          </div>
+
+          <!-- Diğer ipuçları -->
+          <div class="space-y-3 mb-6">
             <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
               <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                2
+                ◐
               </span>
               <div>
                 <p class="text-sm font-medium text-gray-900">Bildirimleri açın</p>
@@ -421,7 +458,7 @@ const stepNumber = computed(() => {
 
             <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
               <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                3
+                ⟲
               </span>
               <div>
                 <p class="text-sm font-medium text-gray-900">Otomatik çalışma</p>

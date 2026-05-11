@@ -3,6 +3,7 @@ const { backendUrl, wsConnected } = useBkds();
 const auth = useAuth();
 const updater = useUpdater();
 const autostart = useAutostart();
+const network = useNetworkInfo();
 
 // Yerel bildirim — context'e göre Tauri plugin veya browser Notification API.
 // İzin reddedilince platforma özel kurtarma talimatı gösterilir (URL barı yok vs).
@@ -143,6 +144,7 @@ onMounted(async () => {
   if (auth.isLocalhost()) {
     await fetchPairCode();
     await fetchDeviceCount();
+    await network.refresh();
     // Hem kod hem cihaz sayısı her 5 sn'de bir tazelenir.
     // Telefondan yeni eşleştirme olunca deviceCount artışı + (gerekirse) kod
     // değişikliği UI'a yansır. Localhost'ta maliyet ihmal edilebilir.
@@ -319,16 +321,52 @@ const notInSecureContext = computed(() => {
       <h2 class="text-[11px] uppercase tracking-wider text-gray-500 font-medium mb-2">
         Cihaz Eşleştirme
       </h2>
-      <div class="bg-gray-50 rounded-xl p-3 space-y-2.5">
-        <p class="text-[11px] text-gray-600 leading-relaxed">
-          Telefonu uygulamaya bağlamak için telefonun tarayıcısında aşağıdaki kodu girin.
-          Kod 10 dakikada bir otomatik yenilenir.
-        </p>
-        <div
-          class="text-center text-3xl font-mono font-semibold tracking-[0.4em] text-brand
-                 bg-white py-3 rounded-xl select-all"
-        >
-          {{ pairCode }}
+      <div class="bg-gray-50 rounded-xl p-3 space-y-3">
+        <!-- Adım 1: telefondan açılacak adres -->
+        <div>
+          <p class="text-[11px] text-gray-600 mb-1.5">
+            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand text-white text-[10px] font-semibold mr-1.5">1</span>
+            Telefonun tarayıcısında bu adrese gidin
+          </p>
+          <div
+            v-if="network.primaryUrl.value"
+            class="font-mono text-[13px] text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-2 select-all break-all"
+          >
+            {{ network.primaryUrl.value }}
+          </div>
+          <div
+            v-else
+            class="text-[11px] text-gray-500 bg-white rounded-lg px-3 py-2"
+          >
+            Ağ bilgisi alınıyor...
+          </div>
+          <div
+            v-if="network.urls.value.length > 1"
+            class="mt-1 space-y-0.5"
+          >
+            <p class="text-[10px] text-gray-500">Alternatif adresler:</p>
+            <div
+              v-for="alt in network.urls.value.slice(1)"
+              :key="alt"
+              class="font-mono text-[11px] text-gray-600 select-all break-all"
+            >
+              {{ alt }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Adım 2: pair code -->
+        <div>
+          <p class="text-[11px] text-gray-600 mb-1.5">
+            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand text-white text-[10px] font-semibold mr-1.5">2</span>
+            Telefonda bu kodu girin
+          </p>
+          <div
+            class="text-center text-3xl font-mono font-semibold tracking-[0.4em] text-brand
+                   bg-white py-3 rounded-xl select-all"
+          >
+            {{ pairCode }}
+          </div>
         </div>
         <div class="flex items-center justify-between text-xs text-gray-600">
           <span>Kayıtlı cihaz</span>
