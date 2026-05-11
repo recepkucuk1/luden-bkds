@@ -8,17 +8,29 @@
  * Storage: localStorage (kalıcı, Safari/iOS PWA dahil destekli).
  */
 
-const TOKEN_KEY = 'luden-bkds-device-token';
+const TOKEN_KEY = 'brytakip-device-token';
+// Geçiş: eski "luden-bkds-device-token" key'inden migrate ediyoruz.
+const TOKEN_KEY_LEGACY = 'luden-bkds-device-token';
 
 export const useAuth = () => {
   const token = useState<string | null>('luden-auth-token', () => null);
 
-  // İlk çalışmada localStorage'tan oku
+  // İlk çalışmada localStorage'tan oku. Eski key'den migrate eder.
   const loadFromStorage = () => {
     if (typeof window === 'undefined') return;
     if (token.value) return;
     try {
-      token.value = window.localStorage.getItem(TOKEN_KEY);
+      let stored = window.localStorage.getItem(TOKEN_KEY);
+      if (!stored) {
+        // Eski "luden-bkds-device-token" key'inden bir kerelik migration
+        const legacy = window.localStorage.getItem(TOKEN_KEY_LEGACY);
+        if (legacy) {
+          window.localStorage.setItem(TOKEN_KEY, legacy);
+          window.localStorage.removeItem(TOKEN_KEY_LEGACY);
+          stored = legacy;
+        }
+      }
+      token.value = stored;
     } catch {
       // private mode vs.
     }

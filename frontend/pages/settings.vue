@@ -205,7 +205,7 @@ const onTest = async () => {
   try {
     if (isInTauri()) {
       const { sendNotification } = await import('@tauri-apps/plugin-notification');
-      await sendNotification({ title: 'Luden BKDS', body: 'Yerel test bildirimi ✓' });
+      await sendNotification({ title: 'BRY Takip', body: 'Yerel test bildirimi ✓' });
     } else {
       const opts: NotificationOptions = {
         body: 'Yerel test bildirimi ✓',
@@ -214,9 +214,9 @@ const onTest = async () => {
       };
       if (navigator.serviceWorker?.ready) {
         const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification('Luden BKDS', opts);
+        await reg.showNotification('BRY Takip', opts);
       } else {
-        new Notification('Luden BKDS', opts);
+        new Notification('BRY Takip', opts);
       }
     }
     testResult.value = 'Bildirim gönderildi';
@@ -471,7 +471,7 @@ const notInSecureContext = computed(() => {
         </p>
         <p class="text-[11px] text-gray-600 leading-relaxed">
           <strong class="text-gray-700">Tam bildirim takibi için</strong> bilgisayardaki
-          Luden BKDS uygulamasını kullanın — kilit ekranı dahil her durumda bildirim
+          BRY Takip uygulamasını kullanın — kilit ekranı dahil her durumda bildirim
           gönderir.
         </p>
       </div>
@@ -531,7 +531,7 @@ const notInSecureContext = computed(() => {
           <ol v-if="context === 'tauri-mac'" class="list-decimal list-inside space-y-0.5">
             <li>Apple menüsü → <strong>Sistem Ayarları</strong></li>
             <li><strong>Bildirimler</strong> bölümüne girin</li>
-            <li>Listeden <strong>Luden BKDS</strong>'i bulun</li>
+            <li>Listeden <strong>BRY Takip</strong>'i bulun</li>
             <li>"Bildirimlere izin ver" seçeneğini açın</li>
             <li>Bu uygulamayı tray'den çıkış yapıp yeniden açın</li>
           </ol>
@@ -539,7 +539,7 @@ const notInSecureContext = computed(() => {
           <!-- Tauri (Windows) -->
           <ol v-else-if="context === 'tauri-win'" class="list-decimal list-inside space-y-0.5">
             <li>Başlat → <strong>Ayarlar</strong> → <strong>Sistem</strong> → <strong>Bildirimler</strong></li>
-            <li>Listeden <strong>Luden BKDS</strong>'i bulun</li>
+            <li>Listeden <strong>BRY Takip</strong>'i bulun</li>
             <li>Bildirimleri açın</li>
             <li>Uygulamayı yeniden başlatın</li>
           </ol>
@@ -562,7 +562,7 @@ const notInSecureContext = computed(() => {
 
           <!-- iOS PWA: Safari website data sıfırla + tekrar ekle -->
           <ol v-else-if="context === 'ios-pwa'" class="list-decimal list-inside space-y-0.5">
-            <li>Ana ekrandaki <strong>Luden BKDS</strong> ikonunu tap-tut → <strong>Uygulamayı Sil</strong></li>
+            <li>Ana ekrandaki <strong>BRY Takip</strong> ikonunu tap-tut → <strong>Uygulamayı Sil</strong></li>
             <li>iPhone <strong>Ayarlar</strong> → <strong>Safari</strong> → <strong>Gelişmiş</strong> → <strong>Web Sitesi Verileri</strong></li>
             <li>Bu adresi (örn. {{ shortHost }}) bulup <strong>silin</strong></li>
             <li>Safari'de bu sayfayı tekrar açın → paylaş → <strong>Ana Ekrana Ekle</strong></li>

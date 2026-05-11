@@ -2,7 +2,7 @@
  * Auto-start (Login Items / Registry Run) wrapper.
  *
  * - Sadece Tauri webview içinde çalışır. PWA telefonda no-op.
- * - macOS: ~/Library/LaunchAgents/com.ludenlab.bkds.plist (LaunchAgent)
+ * - macOS: ~/Library/LaunchAgents/com.brytakip.app.plist (LaunchAgent)
  * - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
  *
  * Auto-start aktifken Mac/Windows boot olunca uygulama "--auto-start" arg'ı

@@ -12,7 +12,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Luden BKDS',
+      title: 'BRY Takip',
       meta: [
         { charset: 'utf-8' },
         {
@@ -37,8 +37,8 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Luden BKDS',
-      short_name: 'Luden BKDS',
+      name: 'BRY Takip',
+      short_name: 'BRY Takip',
       description: 'BKDS anlık takip',
       theme_color: '#0f6e56',
       background_color: '#ffffff',

@@ -1,4 +1,4 @@
-# Luden BKDS Desktop
+# BRY Takip Desktop
 
 Tauri uygulaması — backend (Node.js) + frontend (Nuxt) tek `.app`/`.exe` içinde.
 

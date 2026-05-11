@@ -1,4 +1,4 @@
-# Luden BKDS — Release Kılavuzu
+# BRY Takip — Release Kılavuzu
 
 > Auto-updater için imzalama anahtarları, GitHub secret'leri, endpoint URL'i ve sürüm yayınlama adımları.
 
@@ -106,7 +106,7 @@ GitHub Actions otomatik:
 
 ### Yerel test
 1. `cd desktop && npm run build:all && npm run build`
-2. `open "src-tauri/target/release/bundle/macos/Luden BKDS.app"`
+2. `open "src-tauri/target/release/bundle/macos/BRY Takip.app"`
 3. Açılır, çalışır. Auto-update kontrolü endpoint'e ulaşamayacağı için sessizce başarısız olur (banner çıkmaz, hata gizli).
 
 ### CI test (release publish etmeden)

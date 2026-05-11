@@ -1,4 +1,4 @@
-# Luden BKDS — Hukuki Boyut ve KVKK
+# BRY Takip — Hukuki Boyut ve KVKK
 
 > **Bu dosya:** Mimari kararlarımızın **neden** böyle olduğunu ve hukuki/etik gerekçelerini yazıyor. KVKK uyumluluğu, INNOVA ile ilişki, lokal vs cloud mimari tartışması.
 
@@ -102,7 +102,7 @@ INNOVA BRY (kurum sunucusu)
     │
     │ HTTP (yerel ağ)
     ↓
-Luden BKDS (kurum bilgisayarı)
+BRY Takip (kurum bilgisayarı)
     │
     │ HTTP (yerel ağ)
     ↓

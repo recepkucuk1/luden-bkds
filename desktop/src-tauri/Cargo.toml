@@ -1,12 +1,12 @@
 [package]
-name = "luden-bkds-desktop"
+name = "brytakip-desktop"
 version = "0.1.0"
-description = "Luden BKDS Desktop"
+description = "BRY Takip Desktop"
 authors = ["LudenLab"]
 edition = "2021"
 
 [lib]
-name = "luden_bkds_desktop_lib"
+name = "brytakip_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

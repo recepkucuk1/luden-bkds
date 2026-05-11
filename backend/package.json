@@ -1,7 +1,7 @@
 {
-  "name": "luden-bkds-backend",
+  "name": "brytakip-backend",
   "version": "0.1.0",
-  "description": "BKDS Mobile - Backend (INNOVA BRY API client + WebSocket + polling)",
+  "description": "BRY Takip - Backend (INNOVA BRY API client + WebSocket + polling)",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",

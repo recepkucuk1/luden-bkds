@@ -1,4 +1,4 @@
-# Luden BKDS
+# BRY Takip
 
 Özel eğitim merkezleri için INNOVA BKDS giriş-çıkış canlı takip uygulaması. Telefondan ve bilgisayardan anlık takip, ders saati hesabı, yerel ağ bildirimi (Web Push yok — veri kurum dışına çıkmaz).
 

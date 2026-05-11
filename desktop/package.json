@@ -1,7 +1,7 @@
 {
-  "name": "luden-bkds-desktop",
+  "name": "brytakip-desktop",
   "version": "0.1.0",
-  "description": "Luden BKDS Desktop — Tauri uygulaması (backend + frontend gömülü)",
+  "description": "BRY Takip Desktop — Tauri uygulaması (backend + frontend gömülü)",
   "private": true,
   "type": "module",
   "scripts": {

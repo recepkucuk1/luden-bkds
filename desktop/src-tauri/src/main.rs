@@ -4,5 +4,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    luden_bkds_desktop_lib::run()
+    brytakip_desktop_lib::run()
 }

@@ -22,7 +22,9 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-const SERVICE = 'com.ludenlab.bkds';
+const SERVICE = 'com.brytakip.app';
+// Eski bundle identifier (Luden BKDS dönemi). Migration için get() önce yeni, sonra eski'ye bakar.
+const SERVICE_LEGACY = 'com.ludenlab.bkds';
 
 export interface SecretStore {
   isAvailable(): boolean;
@@ -42,16 +44,38 @@ class MacKeychainStore implements SecretStore {
   }
 
   async get(account: string): Promise<string | null> {
+    // 1) Yeni service'den dene
+    const fromNew = await this.readFrom(account, SERVICE);
+    if (fromNew !== null) return fromNew;
+
+    // 2) Eski service'den dene (Luden BKDS dönemi); bulursa yeni'ye taşı + eski'yi sil
+    const fromLegacy = await this.readFrom(account, SERVICE_LEGACY);
+    if (fromLegacy !== null) {
+      try {
+        await execFileAsync('security', [
+          'add-generic-password',
+          '-a', account, '-s', SERVICE,
+          '-w', fromLegacy,
+          '-U', '-A',
+        ]);
+        await execFileAsync('security', [
+          'delete-generic-password',
+          '-a', account, '-s', SERVICE_LEGACY,
+        ]).catch(() => {/* zaten yoksa OK */});
+      } catch {/* migrate başarısızsa eski'den okumayı tek seferlik döndür */}
+      return fromLegacy;
+    }
+    return null;
+  }
+
+  private async readFrom(account: string, service: string): Promise<string | null> {
     try {
       const { stdout } = await execFileAsync('security', [
         'find-generic-password',
-        '-a', account,
-        '-s', SERVICE,
-        '-w', // sadece şifreyi yaz
+        '-a', account, '-s', service, '-w',
       ]);
-      return stdout.replace(/\n$/, ''); // trailing newline at
+      return stdout.replace(/\n$/, '');
     } catch {
-      // Anahtar yok veya erişim reddedildi
       return null;
     }
   }

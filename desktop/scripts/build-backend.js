@@ -52,7 +52,7 @@ await build({
   // ESM bundle'da gerekli __dirname/__filename polyfill için
   banner: {
     js: `#!/usr/bin/env node
-// Luden BKDS Backend bundle (auto-generated)
+// BRY Takip Backend bundle (auto-generated)
 import { createRequire as __luden_createRequire } from 'node:module';
 import { fileURLToPath as __luden_fileURLToPath } from 'node:url';
 import { dirname as __luden_dirname } from 'node:path';

@@ -25,7 +25,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // 1. Telefon ise token kontrolü
   if (!isLocal) {
     let token: string | null = null;
-    try { token = window.localStorage.getItem('luden-bkds-device-token'); } catch {}
+    try { token = window.localStorage.getItem('brytakip-device-token'); } catch {}
     if (!token) {
       return navigateTo('/pair');
     }
@@ -35,7 +35,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   try {
     const headers: Record<string, string> = {};
     if (!isLocal) {
-      const t = window.localStorage.getItem('luden-bkds-device-token');
+      const t = window.localStorage.getItem('brytakip-device-token');
       if (t) headers.Authorization = `Bearer ${t}`;
     }
     const r = await $fetch<{ configured: boolean }>(

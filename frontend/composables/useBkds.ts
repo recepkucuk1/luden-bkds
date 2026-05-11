@@ -125,7 +125,7 @@ export const useBkds = () => {
   // Sadece ekran görünmüyorken tetikle — sayfa açıkken in-app banner zaten gösteriyor.
   //
   // Tauri içinde: tauri-plugin-notification → macOS Notification Center'a düzgün entegre,
-  // izin yönetimi Sistem Ayarları → Bildirimler → Luden BKDS üzerinden yapılır.
+  // izin yönetimi Sistem Ayarları → Bildirimler → BRY Takip üzerinden yapılır.
   // Tarayıcı/PWA: standart Notification API.
   const isInTauri = (): boolean => {
     if (typeof window === 'undefined') return false;

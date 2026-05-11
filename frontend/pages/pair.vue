@@ -48,7 +48,7 @@ const submit = async () => {
       <p class="text-[10px] uppercase tracking-wider text-white/70">Cihaz Eşleştirme</p>
       <h1 class="text-lg font-semibold">Kodu girin</h1>
       <p class="text-sm text-white/85 mt-2 leading-relaxed">
-        Bilgisayardaki Luden BKDS uygulamasının ayarlar ekranında gösterilen
+        Bilgisayardaki BRY Takip uygulamasının ayarlar ekranında gösterilen
         6 haneli kodu girin. Bu telefon kuruma kayıtlı olur, bir daha sormayız.
       </p>
     </header>
@@ -89,7 +89,7 @@ const submit = async () => {
       <div class="pt-4 text-[11px] text-gray-500 leading-relaxed border-t border-gray-100 mt-6">
         <p class="font-medium text-gray-700 mb-1">Kod nereden alınır?</p>
         <p>
-          Bilgisayardaki Luden BKDS uygulamasını açın → Ayarlar →
+          Bilgisayardaki BRY Takip uygulamasını açın → Ayarlar →
           "Cihaz Eşleştirme" bölümünde 6 haneli kod görünür.
           Kod 10 dakikada bir otomatik yenilenir.
         </p>

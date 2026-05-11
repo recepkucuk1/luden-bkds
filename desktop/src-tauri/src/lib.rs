@@ -1,4 +1,4 @@
-// Luden BKDS Desktop — Rust kabuk
+// BRY Takip Desktop — Rust kabuk
 //
 // Sorumluluk:
 //  1. Backend script'ini (server.mjs) Node.js ile başlat
@@ -124,9 +124,9 @@ pub fn run() {
                 .expect("resource dir alınamadı");
 
             // Kullanıcı verileri klasörü — config, abonelik, log buraya yazılır
-            // macOS: ~/Library/Application Support/com.ludenlab.bkds/
-            // Windows: %APPDATA%\com.ludenlab.bkds\
-            // Linux: ~/.config/com.ludenlab.bkds/
+            // macOS: ~/Library/Application Support/com.brytakip.app/
+            // Windows: %APPDATA%\com.brytakip.app\
+            // Linux: ~/.config/com.brytakip.app/
             // .app içine yazamayız (Gatekeeper), buraya yazıyoruz
             let app_data_dir = app
                 .path()
@@ -135,9 +135,29 @@ pub fn run() {
             // Klasör yoksa oluştur
             std::fs::create_dir_all(&app_data_dir).ok();
 
+            // Bundle identifier "com.ludenlab.bkds" → "com.brytakip.app" geçişi:
+            // Yeni data dir boşsa ve eski dir varsa, içeriği bir kerelik kopyala.
+            // Bu sayede mevcut kullanıcılar config + cihaz token'larını kaybetmez.
+            if let Some(parent) = app_data_dir.parent() {
+                let legacy_dir = parent.join("com.ludenlab.bkds");
+                if legacy_dir.exists() {
+                    let new_is_empty = std::fs::read_dir(&app_data_dir)
+                        .map(|mut d| d.next().is_none())
+                        .unwrap_or(true);
+                    if new_is_empty {
+                        if let Ok(entries) = std::fs::read_dir(&legacy_dir) {
+                            for entry in entries.flatten() {
+                                let dst = app_data_dir.join(entry.file_name());
+                                let _ = std::fs::copy(entry.path(), dst);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Log dosyasını ayarla — tüm Tauri lifecycle event'leri buraya yazılır.
-            // macOS: ~/Library/Application Support/com.ludenlab.bkds/tauri.log
-            // Windows: %APPDATA%\com.ludenlab.bkds\tauri.log
+            // macOS: ~/Library/Application Support/com.brytakip.app/tauri.log
+            // Windows: %APPDATA%\com.brytakip.app\tauri.log
             // Sorun bildiren kullanıcıdan bu dosyayı isteyebilirsin.
             LOG_PATH.set(app_data_dir.join("tauri.log")).ok();
 
@@ -234,7 +254,7 @@ pub fn run() {
 
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("Luden BKDS")
+                .tooltip("BRY Takip")
                 .menu(&menu)
                 .show_menu_on_left_click(true) // Mac konvensiyonu: sol tık menü gösterir
                 .on_menu_event(|app, event| match event.id.as_ref() {
