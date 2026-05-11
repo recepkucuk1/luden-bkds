@@ -124,9 +124,9 @@ pub fn run() {
                 .expect("resource dir alınamadı");
 
             // Kullanıcı verileri klasörü — config, abonelik, log buraya yazılır
-            // macOS: ~/Library/Application Support/com.brytakip.app/
-            // Windows: %APPDATA%\com.brytakip.app\
-            // Linux: ~/.config/com.brytakip.app/
+            // macOS: ~/Library/Application Support/com.brytakip.bkds/
+            // Windows: %APPDATA%\com.brytakip.bkds\
+            // Linux: ~/.config/com.brytakip.bkds/
             // .app içine yazamayız (Gatekeeper), buraya yazıyoruz
             let app_data_dir = app
                 .path()
@@ -135,29 +135,35 @@ pub fn run() {
             // Klasör yoksa oluştur
             std::fs::create_dir_all(&app_data_dir).ok();
 
-            // Bundle identifier "com.ludenlab.bkds" → "com.brytakip.app" geçişi:
-            // Yeni data dir boşsa ve eski dir varsa, içeriği bir kerelik kopyala.
-            // Bu sayede mevcut kullanıcılar config + cihaz token'larını kaybetmez.
+            // Bundle identifier migration chain:
+            // com.ludenlab.bkds (orijinal) → com.brytakip.app (kısa süre kullanıldı,
+            //   bundle ID .app uzantısı macOS hdiutil ile çakışıyordu)
+            //                              → com.brytakip.bkds (kalıcı, mevcut)
+            // Yeni data dir boşsa, en yakın legacy'den içeriği bir kerelik kopyala.
+            // Sıra: önce com.brytakip.app (recent), sonra com.ludenlab.bkds (older).
             if let Some(parent) = app_data_dir.parent() {
-                let legacy_dir = parent.join("com.ludenlab.bkds");
-                if legacy_dir.exists() {
-                    let new_is_empty = std::fs::read_dir(&app_data_dir)
-                        .map(|mut d| d.next().is_none())
-                        .unwrap_or(true);
-                    if new_is_empty {
-                        if let Ok(entries) = std::fs::read_dir(&legacy_dir) {
-                            for entry in entries.flatten() {
-                                let dst = app_data_dir.join(entry.file_name());
-                                let _ = std::fs::copy(entry.path(), dst);
+                let new_is_empty = std::fs::read_dir(&app_data_dir)
+                    .map(|mut d| d.next().is_none())
+                    .unwrap_or(true);
+                if new_is_empty {
+                    for legacy_name in &["com.brytakip.app", "com.ludenlab.bkds"] {
+                        let legacy_dir = parent.join(legacy_name);
+                        if legacy_dir.exists() {
+                            if let Ok(entries) = std::fs::read_dir(&legacy_dir) {
+                                for entry in entries.flatten() {
+                                    let dst = app_data_dir.join(entry.file_name());
+                                    let _ = std::fs::copy(entry.path(), dst);
+                                }
                             }
+                            break; // en yakın legacy'den taşıdık, dur
                         }
                     }
                 }
             }
 
             // Log dosyasını ayarla — tüm Tauri lifecycle event'leri buraya yazılır.
-            // macOS: ~/Library/Application Support/com.brytakip.app/tauri.log
-            // Windows: %APPDATA%\com.brytakip.app\tauri.log
+            // macOS: ~/Library/Application Support/com.brytakip.bkds/tauri.log
+            // Windows: %APPDATA%\com.brytakip.bkds\tauri.log
             // Sorun bildiren kullanıcıdan bu dosyayı isteyebilirsin.
             LOG_PATH.set(app_data_dir.join("tauri.log")).ok();
 

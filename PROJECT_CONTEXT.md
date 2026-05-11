@@ -201,7 +201,7 @@ Hesaplamada **kuralımız:** "İlk hareket = giriş zamanı, son hareket = çık
 ✅ **Faz 8-10:** Tauri'ye paketleme — Mac `.dmg` ve `.app` üretimi
 ✅ **Faz 11:** Process lifecycle — Cmd+Q, X, Force Quit'te child process temizliği
 ✅ **Faz 11c:** Orphan detect — backend kendi parent'ını izler, ölünce kapanır
-✅ **Faz 12:** User data dir — config `~/Library/Application Support/com.brytakip.app/`'a yazılır
+✅ **Faz 12:** User data dir — config `~/Library/Application Support/com.brytakip.bkds/`'a yazılır
 ✅ **Faz 12b:** Web Push kaldırıldı — saf yerel ağ bildirimi (browser Notification API). KVKK ve "veri kurum dışına çıkmaz" iddiası granitleşti.
 ✅ **Faz 12c:** LAN sertleştirmesi — pair-code ile cihaz auth (telefon Mac'teki 6 haneli kodu girer, persistent token alır), şifre macOS Keychain'e taşındı (auto-migrate), polling/cache temizliği:
   - Akıllı cache invalidation: sadece summary'si değişen UUID'ler için BRY'ye gidilir

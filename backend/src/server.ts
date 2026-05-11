@@ -26,7 +26,7 @@ import { registerRoutes } from './routes/index.js';
 const PORT = Number(process.env.PORT ?? 8787);
 // Veri klasörü:
 // - Tauri içinde: LUDEN_DATA_DIR env ile gelir (Rust'ın app_data_dir'i)
-//   örn: ~/Library/Application Support/com.brytakip.app/
+//   örn: ~/Library/Application Support/com.brytakip.bkds/
 // - Dev'de: cwd/.data (geliştirme rahatlığı için)
 // .app'in içine yazamayız (Gatekeeper engelliyor), kullanıcı klasörüne yazmak zorundayız
 const DATA_DIR = process.env.LUDEN_DATA_DIR || join(process.cwd(), '.data');

@@ -22,9 +22,13 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-const SERVICE = 'com.brytakip.app';
-// Eski bundle identifier (Luden BKDS dönemi). Migration için get() önce yeni, sonra eski'ye bakar.
-const SERVICE_LEGACY = 'com.ludenlab.bkds';
+const SERVICE = 'com.brytakip.bkds';
+// Eski bundle identifier'lar. get() chain order:
+//   1. SERVICE (com.brytakip.bkds)              ← yeni / mevcut
+//   2. com.brytakip.app                          ← kısa süre kullanıldı, .app uzantısı sorunu nedeniyle terkedildi
+//   3. com.ludenlab.bkds                         ← orijinal (Luden BKDS dönemi)
+// İlk bulunan değer yeni service'e migrate edilir + eski'den silinir.
+const SERVICE_LEGACIES = ['com.brytakip.app', 'com.ludenlab.bkds'];
 
 export interface SecretStore {
   isAvailable(): boolean;
@@ -48,22 +52,23 @@ class MacKeychainStore implements SecretStore {
     const fromNew = await this.readFrom(account, SERVICE);
     if (fromNew !== null) return fromNew;
 
-    // 2) Eski service'den dene (Luden BKDS dönemi); bulursa yeni'ye taşı + eski'yi sil
-    const fromLegacy = await this.readFrom(account, SERVICE_LEGACY);
-    if (fromLegacy !== null) {
+    // 2) Legacy chain — bulduğun yerden migrate et + temizle
+    for (const legacy of SERVICE_LEGACIES) {
+      const value = await this.readFrom(account, legacy);
+      if (value === null) continue;
       try {
         await execFileAsync('security', [
           'add-generic-password',
           '-a', account, '-s', SERVICE,
-          '-w', fromLegacy,
+          '-w', value,
           '-U', '-A',
         ]);
         await execFileAsync('security', [
           'delete-generic-password',
-          '-a', account, '-s', SERVICE_LEGACY,
+          '-a', account, '-s', legacy,
         ]).catch(() => {/* zaten yoksa OK */});
       } catch {/* migrate başarısızsa eski'den okumayı tek seferlik döndür */}
-      return fromLegacy;
+      return value;
     }
     return null;
   }
