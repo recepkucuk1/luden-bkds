@@ -8,84 +8,71 @@ const autostart = useAutostart();
 const router = useRouter();
 const route = useRoute();
 
-// Mevcut config (varsa) ön doldur
+// Düzenleme modu — Settings'ten gelinmiş, karşılamayı atla
+const isEdit = computed(() => route.query.edit === '1');
+
+type Step = 'welcome' | 'url' | 'credentials' | 'done';
+const currentStep = ref<Step>(isEdit.value ? 'url' : 'welcome');
+
 const baseUrl = ref('');
 const username = ref('');
 const password = ref('');
 
-// Düzenleme modu mu? (settings'ten gelinmiş)
-const isEdit = computed(() => route.query.edit === '1');
-
-const status = ref<'idle' | 'testing' | 'saving' | 'ok' | 'error'>('idle');
+const submitting = ref(false);
 const errorMsg = ref<string | null>(null);
 
 onMounted(async () => {
-  // Mevcut config varsa preload
-  try {
-    const r = await $fetch<{ configured: boolean; info: any }>(
-      `${backendUrl}/api/setup/status`,
-    );
-    if (r.info) {
-      baseUrl.value = r.info.baseUrl ?? baseUrl.value;
-      username.value = r.info.username ?? '';
-      // şifre döndürülmez güvenlik için
+  // Edit modunda mevcut config'i yükle (şifre dönmez güvenlik için)
+  if (isEdit.value) {
+    try {
+      const r = await $fetch<{ configured: boolean; info: any }>(
+        `${backendUrl}/api/setup/status`,
+      );
+      if (r.info) {
+        baseUrl.value = r.info.baseUrl ?? '';
+        username.value = r.info.username ?? '';
+      }
+    } catch {
+      /* yeni kurulum, sessizce geç */
     }
-  } catch {
-    // Sessizce geç — yeni kurulum
   }
 });
 
-const onTest = async () => {
-  if (!baseUrl.value || !username.value || !password.value) {
-    errorMsg.value = 'Tüm alanları doldurun';
-    return;
-  }
-  status.value = 'testing';
-  errorMsg.value = null;
+// ── Step 1: URL format doğrulaması ──────────────────────────────
+// Sadece syntax kontrolü; gerçek bağlanılabilirlik step 2'de credential
+// testiyle birlikte doğrulanır (gereksiz round-trip yok)
+const isValidUrl = computed(() => {
+  const v = baseUrl.value.trim();
+  if (!v) return false;
   try {
-    const r = await $fetch<{ ok: boolean; error?: string }>(
-      `${backendUrl}/api/setup/test`,
-      {
-        method: 'POST',
-        body: {
-          baseUrl: baseUrl.value.trim(),
-          username: username.value.trim(),
-          password: password.value,
-        },
-      },
-    );
-    if (r.ok) {
-      status.value = 'ok';
-    } else {
-      status.value = 'error';
-      errorMsg.value = r.error || 'Bağlantı başarısız';
-    }
-  } catch (err: any) {
-    status.value = 'error';
-    errorMsg.value = err?.message ?? 'İstek başarısız';
+    const u = new URL(v);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
   }
-};
+});
 
-const onSave = async () => {
-  if (!baseUrl.value || !username.value || !password.value) {
-    errorMsg.value = 'Tüm alanları doldurun';
+// ── Step 2: Test + kaydet, tek tuşta ───────────────────────────
+const submitCredentials = async () => {
+  if (!username.value.trim() || !password.value) {
+    errorMsg.value = 'Kullanıcı adı ve şifre gerekli';
     return;
   }
-  status.value = 'saving';
+  submitting.value = true;
   errorMsg.value = null;
   try {
+    const cleanUrl = baseUrl.value.trim().replace(/\/+$/, '');
+    // /save endpoint zaten önce testCredentials çağırıp sonra kaydeder
     await $fetch(`${backendUrl}/api/setup/save`, {
       method: 'POST',
       body: {
-        baseUrl: baseUrl.value.trim(),
+        baseUrl: cleanUrl,
         username: username.value.trim(),
         password: password.value,
       },
     });
 
-    // İlk kurulumdaysa auto-start'ı sessizce aç (kullanıcıya sormadan).
-    // Tauri içinde değilse no-op. Düzenleme modunda da müdahale etme — zaten
-    // ya açıktır ya da kullanıcı bilerek kapatmıştır.
+    // İlk kurulumdaysa auto-start'ı sessizce aç (Tauri içinde)
     if (!isEdit.value && autostart.isInTauri()) {
       await autostart.refresh();
       if (autostart.enabled.value === false) {
@@ -93,160 +80,370 @@ const onSave = async () => {
       }
     }
 
-    // Başarılı — anasayfaya yönlendir
-    router.replace('/');
+    // Edit modunda direkt anasayfaya, yeni kurulumda done ekranına
+    if (isEdit.value) {
+      router.replace('/');
+    } else {
+      currentStep.value = 'done';
+    }
   } catch (err: any) {
-    status.value = 'error';
-    errorMsg.value = err?.data?.error || err?.message || 'Kayıt başarısız';
+    errorMsg.value = err?.data?.error || err?.message || 'Bağlantı kurulamadı';
+  } finally {
+    submitting.value = false;
   }
 };
 
-// Form geçerli mi?
-const canSubmit = computed(
-  () =>
-    baseUrl.value.trim().length > 0 &&
-    username.value.trim().length > 0 &&
-    password.value.length > 0 &&
-    status.value !== 'testing' &&
-    status.value !== 'saving',
-);
+const goBack = () => {
+  if (currentStep.value === 'credentials') currentStep.value = 'url';
+  else if (currentStep.value === 'url' && !isEdit.value) currentStep.value = 'welcome';
+};
+
+const goToHome = () => router.replace('/');
+
+// Step indicator (1/3, 2/3, 3/3) — sadece url ve credentials adımlarında
+const stepNumber = computed(() => {
+  if (currentStep.value === 'url') return 1;
+  if (currentStep.value === 'credentials') return 2;
+  return 0;
+});
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
-    <!-- Header -->
-    <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
-      <div class="px-4 py-5">
-        <div class="flex items-center gap-3">
-          <NuxtLink
-            v-if="isEdit"
-            to="/settings"
-            class="w-9 h-9 rounded-full flex items-center justify-center text-white/80 active:bg-white/10"
-          >
-            ‹
-          </NuxtLink>
-          <div class="flex-1">
-            <p class="text-[10px] uppercase tracking-wider text-white/70">
-              {{ isEdit ? 'Ayar' : 'Hoş geldiniz' }}
+  <div class="min-h-screen bg-white flex flex-col">
+    <!-- ── Karşılama ────────────────────────────────────────── -->
+    <Transition
+      mode="out-in"
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 translate-x-2"
+      enter-to-class="opacity-100 translate-x-0"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0 -translate-x-2"
+    >
+      <!-- Step: welcome -->
+      <div
+        v-if="currentStep === 'welcome'"
+        key="welcome"
+        class="flex-1 flex flex-col"
+      >
+        <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
+          <div class="px-5 py-8 text-center">
+            <div class="w-20 h-20 rounded-2xl bg-white/15 mx-auto flex items-center justify-center text-4xl mb-4">
+              ↘
+            </div>
+            <h1 class="text-2xl font-semibold">BRY Takip</h1>
+            <p class="text-sm text-white/85 mt-1">
+              Kameranızı cebinizde takip edin
             </p>
-            <h1 class="text-lg font-semibold">
-              {{ isEdit ? 'BRY bilgilerini güncelle' : 'Kurulum' }}
-            </h1>
           </div>
-        </div>
-        <p v-if="!isEdit" class="text-sm text-white/85 mt-2 leading-relaxed">
-          BRY sunucu adresini ve giriş bilgilerinizi girin. Bu bilgiler sadece
-          bilgisayarınızda saklanır, kuruma dışına çıkmaz.
-        </p>
-      </div>
-    </header>
+        </header>
 
-    <!-- Form -->
-    <main class="px-4 py-5 space-y-4">
-      <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">
-          BRY sunucu adresi
-        </label>
-        <input
-          v-model="baseUrl"
-          type="url"
-          inputmode="url"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          placeholder="http://192.168.X.X:3000"
-          class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white"
-        />
-        <p class="text-[11px] text-gray-500 mt-1">
-          Yerel ağdaki BRY sunucusunun IP adresi ve portu.
-          Genellikle <code>http://192.168.X.X:3000</code> formatındadır.
-        </p>
-      </div>
+        <main class="flex-1 px-5 py-6 flex flex-col">
+          <div class="space-y-4 mb-8">
+            <div class="flex items-start gap-3">
+              <span class="text-brand text-lg leading-none mt-0.5">●</span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Anlık takip</p>
+                <p class="text-[12px] text-gray-600 leading-relaxed">
+                  BKDS giriş-çıkışları telefonunuza yansır
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="text-brand text-lg leading-none mt-0.5">●</span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Otomatik ders hesabı</p>
+                <p class="text-[12px] text-gray-600 leading-relaxed">
+                  MEB ödenek için bireyin ders sayısı tek bakışta
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="text-brand text-lg leading-none mt-0.5">●</span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Yerel ağ</p>
+                <p class="text-[12px] text-gray-600 leading-relaxed">
+                  Veri kurum dışına çıkmaz; KVKK uyumlu tasarım
+                </p>
+              </div>
+            </div>
+          </div>
 
-      <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">
-          Kullanıcı adı
-        </label>
-        <input
-          v-model="username"
-          type="text"
-          inputmode="text"
-          autocomplete="username"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          placeholder="örn: 12345678-1234567"
-          class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white"
-        />
-        <p class="text-[11px] text-gray-500 mt-1">
-          BRY web arayüzüne giriş yaparken kullandığınız kullanıcı adı.
-        </p>
+          <p class="text-[12px] text-gray-500 leading-relaxed bg-gray-50 rounded-xl p-3 mb-6">
+            Kurulum yaklaşık <strong class="text-gray-700">2 dakika</strong>, bir
+            kerelik. BRY sunucu adresi ve giriş bilgilerinize ihtiyaç olacak.
+          </p>
+
+          <div class="mt-auto pb-[env(safe-area-inset-bottom)]">
+            <button
+              class="w-full px-4 py-3.5 bg-brand text-white text-sm font-medium rounded-xl
+                     active:opacity-80 transition-opacity"
+              @click="currentStep = 'url'"
+            >
+              Başlayalım
+            </button>
+          </div>
+        </main>
       </div>
 
-      <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">
-          Şifre
-        </label>
-        <input
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          placeholder="••••••••"
-          class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white"
-          @keyup.enter="onSave"
-        />
-        <p v-if="isEdit" class="text-[11px] text-gray-500 mt-1">
-          Güvenlik için mevcut şifre gösterilmez. Kaydetmek için yeniden girin.
-        </p>
-      </div>
-
-      <!-- Status -->
+      <!-- Step: BRY adresi -->
       <div
-        v-if="status === 'ok'"
-        class="p-3 rounded-xl bg-green-50 border border-green-100 text-sm text-green-800"
+        v-else-if="currentStep === 'url'"
+        key="url"
+        class="flex-1 flex flex-col"
       >
-        ✓ Bağlantı başarılı! Şimdi <strong>Kaydet</strong> ile devam edebilirsiniz.
+        <header class="bg-white border-b border-gray-100 pt-[env(safe-area-inset-top)]">
+          <div class="px-4 py-3 flex items-center gap-3">
+            <button
+              v-if="!isEdit"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 active:bg-gray-100"
+              aria-label="Geri"
+              @click="goBack"
+            >
+              ‹
+            </button>
+            <NuxtLink
+              v-else
+              to="/settings"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 active:bg-gray-100"
+              aria-label="İptal"
+            >
+              ‹
+            </NuxtLink>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] uppercase tracking-wider text-gray-500">
+                {{ isEdit ? 'Düzenleme' : `Adım ${stepNumber}/2` }}
+              </p>
+              <h1 class="text-base font-semibold text-gray-900">Sunucu adresi</h1>
+            </div>
+          </div>
+          <!-- Progress bar (sadece yeni kurulum) -->
+          <div v-if="!isEdit" class="px-4 pb-3 flex gap-1.5">
+            <div class="h-1 flex-1 rounded-full bg-brand"></div>
+            <div class="h-1 flex-1 rounded-full bg-gray-200"></div>
+          </div>
+        </header>
+
+        <main class="flex-1 px-4 py-5 flex flex-col">
+          <p class="text-sm text-gray-700 mb-4 leading-relaxed">
+            BRY sunucusunun yerel ağ adresini girin. Genellikle kurumdaki INNOVA
+            cihazının IP adresidir.
+          </p>
+
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            Sunucu adresi
+          </label>
+          <input
+            v-model="baseUrl"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="http://192.168.X.X:3000"
+            class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm
+                   focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white
+                   font-mono"
+            @keyup.enter="isValidUrl && (currentStep = 'credentials')"
+          />
+
+          <div class="mt-3 text-[11px] text-gray-600 leading-relaxed bg-amber-50 rounded-lg p-3">
+            <p class="font-medium text-amber-900 mb-1">Bilmiyor musunuz?</p>
+            <p class="text-amber-800">
+              Kurumdaki INNOVA cihazını teknik olarak kuran kişiden öğrenin —
+              "BRY sunucusunun yerel ağ IP'si ve port'u" olarak sorun.
+              Genellikle <code class="bg-amber-100 px-1 rounded">192.168.</code>
+              ile başlar, port <code class="bg-amber-100 px-1 rounded">:3000</code>'dir.
+            </p>
+          </div>
+
+          <div class="mt-auto pt-4 pb-[env(safe-area-inset-bottom)]">
+            <button
+              class="w-full px-4 py-3.5 bg-brand text-white text-sm font-medium rounded-xl
+                     active:opacity-80 transition-opacity disabled:opacity-50"
+              :disabled="!isValidUrl"
+              @click="currentStep = 'credentials'"
+            >
+              Devam
+            </button>
+          </div>
+        </main>
       </div>
+
+      <!-- Step: Kullanıcı + Şifre -->
       <div
-        v-if="errorMsg"
-        class="p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-800"
+        v-else-if="currentStep === 'credentials'"
+        key="credentials"
+        class="flex-1 flex flex-col"
       >
-        {{ errorMsg }}
+        <header class="bg-white border-b border-gray-100 pt-[env(safe-area-inset-top)]">
+          <div class="px-4 py-3 flex items-center gap-3">
+            <button
+              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 active:bg-gray-100"
+              aria-label="Geri"
+              @click="goBack"
+            >
+              ‹
+            </button>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] uppercase tracking-wider text-gray-500">
+                {{ isEdit ? 'Düzenleme' : `Adım ${stepNumber}/2` }}
+              </p>
+              <h1 class="text-base font-semibold text-gray-900">Giriş bilgileri</h1>
+            </div>
+          </div>
+          <div v-if="!isEdit" class="px-4 pb-3 flex gap-1.5">
+            <div class="h-1 flex-1 rounded-full bg-brand"></div>
+            <div class="h-1 flex-1 rounded-full bg-brand"></div>
+          </div>
+        </header>
+
+        <main class="flex-1 px-4 py-5 flex flex-col">
+          <p class="text-sm text-gray-700 mb-4 leading-relaxed">
+            BRY web arayüzüne giriş yaparken kullandığınız kullanıcı adı ve
+            şifre.
+          </p>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Kullanıcı adı
+              </label>
+              <input
+                v-model="username"
+                type="text"
+                inputmode="text"
+                autocomplete="username"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="örn: 12345678-1234567"
+                class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm
+                       focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white
+                       font-mono"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Şifre
+              </label>
+              <input
+                v-model="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm
+                       focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white"
+                @keyup.enter="submitCredentials"
+              />
+              <p v-if="isEdit" class="text-[11px] text-gray-500 mt-1">
+                Güvenlik için mevcut şifre gösterilmez. Yeniden girin.
+              </p>
+            </div>
+          </div>
+
+          <div
+            v-if="errorMsg"
+            class="mt-4 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-800"
+          >
+            {{ errorMsg }}
+          </div>
+
+          <div class="mt-3 text-[11px] text-gray-500 leading-relaxed">
+            Bu bilgiler bilgisayarınızda macOS Keychain (Mac) ya da güvenli
+            kayıtta saklanır. Kurum dışına çıkmaz.
+          </div>
+
+          <div class="mt-auto pt-4 pb-[env(safe-area-inset-bottom)]">
+            <button
+              class="w-full px-4 py-3.5 bg-brand text-white text-sm font-medium rounded-xl
+                     active:opacity-80 transition-opacity disabled:opacity-50"
+              :disabled="submitting || !username.trim() || !password"
+              @click="submitCredentials"
+            >
+              {{ submitting ? 'Bağlanılıyor...' : (isEdit ? 'Kaydet' : 'Bağlan ve devam') }}
+            </button>
+          </div>
+        </main>
       </div>
 
-      <!-- Butonlar -->
-      <div class="flex gap-2 pt-2">
-        <button
-          class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-xl
-                 active:opacity-80 disabled:opacity-50"
-          :disabled="!canSubmit"
-          @click="onTest"
-        >
-          {{ status === 'testing' ? 'Test ediliyor...' : 'Bağlantıyı test et' }}
-        </button>
-        <button
-          class="flex-1 px-4 py-2.5 bg-brand text-white text-sm font-medium rounded-xl
-                 active:opacity-80 disabled:opacity-50"
-          :disabled="!canSubmit"
-          @click="onSave"
-        >
-          {{ status === 'saving' ? 'Kaydediliyor...' : 'Kaydet ve başla' }}
-        </button>
-      </div>
+      <!-- Step: Hazır -->
+      <div
+        v-else-if="currentStep === 'done'"
+        key="done"
+        class="flex-1 flex flex-col"
+      >
+        <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
+          <div class="px-5 py-8 text-center">
+            <div class="w-20 h-20 rounded-full bg-white/15 mx-auto flex items-center justify-center text-4xl mb-4">
+              ✓
+            </div>
+            <h1 class="text-2xl font-semibold">Hazırsınız</h1>
+            <p class="text-sm text-white/85 mt-1">
+              BRY Takip arkaplanda çalışıyor
+            </p>
+          </div>
+        </header>
 
-      <!-- Açıklama -->
-      <div class="pt-4 text-[11px] text-gray-500 leading-relaxed border-t border-gray-100 mt-6">
-        <p>
-          <strong class="text-gray-700">Veriler nereye gidiyor?</strong>
-          Tüm bilgiler bu bilgisayarda kalır.
-          BRY sunucusuna doğrudan bu bilgisayardan bağlanılır.
-          Telefonunuza sadece anlık özet gönderilir.
-        </p>
+        <main class="flex-1 px-5 py-6 flex flex-col">
+          <p class="text-sm text-gray-700 mb-5 leading-relaxed">
+            BKDS verileriniz şu an telefonunuzdan da erişilebilir. Birkaç ipucu:
+          </p>
+
+          <div class="space-y-3 mb-6">
+            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+              <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                1
+              </span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Telefondan bağlanmak için</p>
+                <p class="text-[12px] text-gray-600 leading-relaxed mt-0.5">
+                  Telefonun tarayıcısından bilgisayarın yerel IP'sine gidin.
+                  Ayarlar → Cihaz Eşleştirme'den 6 haneli kodu okuyup girersiniz.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+              <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                2
+              </span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Bildirimleri açın</p>
+                <p class="text-[12px] text-gray-600 leading-relaxed mt-0.5">
+                  Yeni giriş-çıkış olduğunda haber alın. Ayarlar → Yerel
+                  Bildirim'den izin verin.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+              <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                3
+              </span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Otomatik çalışma</p>
+                <p class="text-[12px] text-gray-600 leading-relaxed mt-0.5">
+                  Bilgisayar açılınca uygulama kendiliğinden başlar. Tray
+                  ikonundan her zaman ulaşabilirsiniz.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-auto pb-[env(safe-area-inset-bottom)]">
+            <button
+              class="w-full px-4 py-3.5 bg-brand text-white text-sm font-medium rounded-xl
+                     active:opacity-80 transition-opacity"
+              @click="goToHome"
+            >
+              Anasayfaya git
+            </button>
+          </div>
+        </main>
       </div>
-    </main>
+    </Transition>
   </div>
 </template>
