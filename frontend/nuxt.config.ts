@@ -24,6 +24,23 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
       ],
+      script: [
+        {
+          // Erken tema uygulayıcı — Vue mount'tan önce html.dark class'ı belirler.
+          // Bu sayede dark mode kullanıcı flash of white görmez.
+          // localStorage'tan tercih oku: 'system' (default) | 'light' | 'dark'.
+          innerHTML: `
+            (function() {
+              try {
+                var t = localStorage.getItem('brytakip-theme') || 'system';
+                var dark = t === 'dark' || (t === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.classList.add('dark');
+              } catch (e) {}
+            })();
+          `,
+          tagPosition: 'head',
+        },
+      ],
     },
   },
 

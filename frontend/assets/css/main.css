@@ -13,11 +13,9 @@ html, body {
   color: #111827;
 }
 
-/* Dark mode — sistem tercihine göre otomatik
-   (iOS Light/Dark, macOS Görünüm, Windows tema) */
-@media (prefers-color-scheme: dark) {
-  html, body {
-    background: #0b1115;
-    color: #e7eaee;
-  }
+/* Dark mode — html.dark class'ı set'lendiğinde aktif.
+   useTheme composable + inline early-execution script tarafından yönetilir. */
+html.dark, html.dark body {
+  background: #0b1115;
+  color: #e7eaee;
 }

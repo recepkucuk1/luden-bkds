@@ -4,6 +4,7 @@ const auth = useAuth();
 const updater = useUpdater();
 const autostart = useAutostart();
 const network = useNetworkInfo();
+const theme = useTheme();
 
 // Yerel bildirim — context'e göre Tauri plugin veya browser Notification API.
 // İzin reddedilince platforma özel kurtarma talimatı gösterilir (URL barı yok vs).
@@ -503,6 +504,40 @@ const notInSecureContext = computed(() => {
             Tüm cihaz erişimini iptal et
           </button>
         </div>
+      </div>
+    </section>
+
+    <!-- Görünüm (her platformda gösterilir — kullanıcı görsel tercihi) -->
+    <section class="mt-5 px-4">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+        Görünüm
+      </h2>
+      <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+        <p class="text-sm text-gray-700 dark:text-gray-200 mb-3">Tema</p>
+        <div class="inline-flex w-full rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 text-xs">
+          <button
+            v-for="opt in [
+              { v: 'system', label: 'Sistem' },
+              { v: 'light', label: 'Aydınlık' },
+              { v: 'dark', label: 'Karanlık' },
+            ]"
+            :key="opt.v"
+            class="flex-1 px-3 py-1.5 rounded-md font-medium transition-colors"
+            :class="
+              theme.pref.value === opt.v
+                ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400'
+            "
+            @click="theme.setPref(opt.v as 'system' | 'light' | 'dark')"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+          "Sistem" işletim sistemi tercihinizi izler (iPhone Light/Dark, macOS
+          Görünüm, Windows tema). "Aydınlık" veya "Karanlık" seçerseniz
+          uygulama hep o modda kalır.
+        </p>
       </div>
     </section>
 

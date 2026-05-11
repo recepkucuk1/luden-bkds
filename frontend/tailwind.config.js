@@ -1,8 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // 'media' = sistem tercihine göre otomatik (iOS Light/Dark, macOS Görünüm, Windows mod).
-  // Kullanıcıya manuel toggle vermiyoruz — müdahalesizlik felsefesi.
-  darkMode: 'media',
+  // 'class' = html element'ine .dark class'ı eklenince aktifleşir.
+  // useTheme composable bunu kullanıcı tercihiyle (system/light/dark) yönetiyor;
+  // sayfa render'ı öncesi inline script ile uygulanıyor (no flash).
+  darkMode: 'class',
   content: [
     './components/**/*.{vue,js,ts}',
     './layouts/**/*.vue',
