@@ -87,37 +87,45 @@ const cameraWarning = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white pb-8">
+  <div class="min-h-screen bg-white dark:bg-gray-900 pb-8">
     <AppHeader />
     <LiveNotification />
     <UpdateBanner />
 
-    <div v-if="error" class="mx-4 mt-3 p-3 rounded-xl bg-red-50 text-red-700 text-sm">
-      <p class="font-medium">Bağlanılamadı</p>
-      <p class="text-[11px] mt-0.5 opacity-80">{{ error }}</p>
-      <button
-        class="mt-2 px-3 py-1 bg-white rounded-lg text-xs font-medium border border-red-200"
-        @click="fetchSnapshot()"
-      >
-        Tekrar dene
-      </button>
+    <div v-if="error" class="mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm">
+      <p class="font-medium">Veriler yüklenemedi</p>
+      <p class="text-[11px] mt-0.5 opacity-80 leading-relaxed">{{ error }}</p>
+      <div class="flex items-center gap-2 mt-2">
+        <button
+          class="px-3 py-1 bg-white dark:bg-gray-800 rounded-lg text-xs font-medium border border-red-200 dark:border-red-900 active:bg-red-50 dark:active:bg-red-950/60"
+          @click="fetchSnapshot()"
+        >
+          Tekrar dene
+        </button>
+        <NuxtLink
+          to="/settings"
+          class="text-[11px] text-red-700 dark:text-red-300 underline"
+        >
+          Sistem durumuna bak →
+        </NuxtLink>
+      </div>
     </div>
 
     <StatsCards />
 
     <div
       v-if="cameraWarning"
-      class="mx-4 mt-3 p-3 rounded-xl bg-amber-50 flex items-start gap-2.5"
+      class="mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 flex items-start gap-2.5"
     >
-      <span class="text-amber-600 text-base leading-none mt-0.5">⚠</span>
+      <span class="text-amber-600 dark:text-amber-400 text-base leading-none mt-0.5">⚠</span>
       <div class="flex-1">
-        <p class="text-sm font-medium text-amber-800">{{ cameraWarning }}</p>
-        <p class="text-[11px] text-amber-700 mt-0.5">Kameraları kontrol et</p>
+        <p class="text-sm font-medium text-amber-800 dark:text-amber-200">{{ cameraWarning }}</p>
+        <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">Kameraları kontrol et</p>
       </div>
     </div>
 
     <div class="px-4 mt-4">
-      <div class="inline-flex rounded-lg bg-gray-100 p-0.5 text-xs">
+      <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs">
         <button
           v-for="f in [
             { v: 'all', label: 'Hepsi' },
@@ -128,8 +136,8 @@ const cameraWarning = computed(() => {
           class="px-3 py-1.5 rounded-md font-medium transition-colors"
           :class="
             filter === f.v
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400'
           "
           @click="filter = f.v as Filter"
         >
@@ -139,22 +147,31 @@ const cameraWarning = computed(() => {
     </div>
 
     <div v-if="loading && !snapshot" class="px-4 mt-4 space-y-2">
-      <div v-for="i in 5" :key="i" class="h-14 bg-gray-100 rounded-xl animate-pulse" />
+      <div v-for="i in 5" :key="i" class="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
     </div>
 
     <template v-else-if="snapshot">
       <section class="mt-4">
         <div class="px-4 flex items-center justify-between mb-2">
-          <h2 class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
+          <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
             Bugün
           </h2>
-          <span class="text-[11px] text-gray-400">{{ filteredList.length }} kişi</span>
+          <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ filteredList.length }} kişi</span>
         </div>
+        <!-- Empty state — başlangıçta veya kategori boşken -->
         <div
           v-if="filteredList.length === 0"
-          class="mx-4 p-4 bg-gray-50 rounded-xl text-center text-xs text-gray-500"
+          class="mx-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"
         >
-          Bu kategoride kayıt yok
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-xl text-gray-300 dark:text-gray-500">
+            ⌀
+          </div>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+            Bu kategoride henüz kayıt yok
+          </p>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+            BRY kameralarınızdan ilk hareket geldiğinde burada görünecek.
+          </p>
         </div>
         <div v-else class="px-4 space-y-1.5">
           <IndividualAccordion
@@ -169,7 +186,7 @@ const cameraWarning = computed(() => {
         </div>
       </section>
 
-      <p class="text-center text-[10px] text-gray-400 mt-6">
+      <p class="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-6">
         Son güncelleme: {{ relative(snapshot.generatedAt) }}
       </p>
     </template>

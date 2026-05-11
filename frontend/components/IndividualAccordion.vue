@@ -96,38 +96,38 @@ const proxyPhoto = photoUrl;
 </script>
 
 <template>
-  <div class="rounded-xl overflow-hidden border bg-gray-50 border-gray-200">
+  <div class="rounded-xl overflow-hidden border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
     <!-- Başlık satırı (her zaman görünür) -->
     <button
       class="w-full flex items-center gap-3 p-3 text-left active:opacity-70 transition-opacity"
       @click="toggle"
     >
       <div
-        class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 bg-white text-gray-600"
+        class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-200"
       >
         {{ initials(individual.full_name) }}
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-gray-900 truncate">
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
           {{ individual.full_name }}
         </p>
-        <div class="flex items-center gap-1.5 text-[11px] text-gray-600 mt-0.5">
+        <div class="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">
           <template v-if="firstEntry">
-            <span class="text-brand font-medium">↘ {{ toTime(firstEntry) }}</span>
-            <span class="text-gray-400">→</span>
+            <span class="text-brand dark:text-brand-400 font-medium">↘ {{ toTime(firstEntry) }}</span>
+            <span class="text-gray-400 dark:text-gray-500">→</span>
             <span
               v-if="lastExit"
-              class="text-gray-700"
+              class="text-gray-700 dark:text-gray-200"
             >↗ {{ toTime(lastExit) }}</span>
             <span
               v-else-if="lastActivity"
-              class="text-gray-700"
+              class="text-gray-700 dark:text-gray-200"
             >↗ {{ toTime(lastActivity.activity_time) }}</span>
-            <span class="text-gray-400">·</span>
+            <span class="text-gray-400 dark:text-gray-500">·</span>
             <span class="font-medium">{{ formatDuration(totalMinutes) }}</span>
           </template>
           <template v-else>
-            <span class="text-gray-500">{{ todayActivityCount }} hareket</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ todayActivityCount }} hareket</span>
           </template>
         </div>
       </div>
@@ -145,7 +145,7 @@ const proxyPhoto = photoUrl;
         </span>
       </div>
 
-      <div class="text-gray-400 text-xs ml-1 flex-shrink-0">
+      <div class="text-gray-400 dark:text-gray-500 text-xs ml-1 flex-shrink-0">
         {{ isOpen ? '▲' : '▼' }}
       </div>
     </button>
@@ -159,14 +159,14 @@ const proxyPhoto = photoUrl;
       leave-from-class="max-h-[800px] opacity-100"
       leave-to-class="max-h-0 opacity-0"
     >
-      <div v-if="isOpen" class="border-t border-white/40">
+      <div v-if="isOpen" class="border-t border-white/40 dark:border-gray-700">
         <!-- Loading -->
         <div v-if="loading" class="p-3 space-y-2">
-          <div v-for="i in 3" :key="i" class="h-10 bg-white/50 rounded-lg animate-pulse" />
+          <div v-for="i in 3" :key="i" class="h-10 bg-white/50 dark:bg-gray-700/50 rounded-lg animate-pulse" />
         </div>
 
         <!-- Error -->
-        <div v-else-if="errorMsg" class="p-3 text-xs text-red-600">
+        <div v-else-if="errorMsg" class="p-3 text-xs text-red-600 dark:text-red-400">
           {{ errorMsg }}
           <button class="underline ml-1" @click="loadActivities">Tekrar dene</button>
         </div>
@@ -174,7 +174,7 @@ const proxyPhoto = photoUrl;
         <!-- Boş -->
         <div
           v-else-if="activities.length === 0"
-          class="p-3 text-xs text-gray-500 text-center"
+          class="p-3 text-xs text-gray-500 dark:text-gray-400 text-center"
         >
           Bugün başka hareket yok
         </div>
@@ -184,13 +184,13 @@ const proxyPhoto = photoUrl;
           <div
             v-for="act in activities"
             :key="act.uuid"
-            class="flex items-center gap-2.5 p-2 rounded-lg bg-white/70"
+            class="flex items-center gap-2.5 p-2 rounded-lg bg-white/70 dark:bg-gray-700/60"
           >
             <img
               v-if="act.roi_url"
               :src="proxyPhoto(act.roi_url)"
               alt=""
-              class="w-9 h-9 rounded-md object-cover bg-white flex-shrink-0"
+              class="w-9 h-9 rounded-md object-cover bg-white dark:bg-gray-600 flex-shrink-0"
               loading="lazy"
             />
             <div class="flex-1 min-w-0">
@@ -198,19 +198,19 @@ const proxyPhoto = photoUrl;
                 class="text-xs font-medium"
                 :class="
                   act.activity_type === 'entry'
-                    ? 'text-brand'
-                    : 'text-gray-700'
+                    ? 'text-brand dark:text-brand-400'
+                    : 'text-gray-700 dark:text-gray-200'
                 "
               >
                 {{ act.activity_type === 'entry' ? 'Giriş' : 'Çıkış' }}
                 <span
                   v-if="act.is_matched_manually"
-                  class="ml-1 text-[10px] text-amber-700"
+                  class="ml-1 text-[10px] text-amber-700 dark:text-amber-300"
                 >
                   (manuel)
                 </span>
               </p>
-              <p class="text-[11px] text-gray-500">
+              <p class="text-[11px] text-gray-500 dark:text-gray-400">
                 {{ toTime(act.activity_time) }}
               </p>
             </div>
@@ -218,8 +218,8 @@ const proxyPhoto = photoUrl;
               class="text-sm flex-shrink-0"
               :class="
                 act.activity_type === 'entry'
-                  ? 'text-brand'
-                  : 'text-gray-400'
+                  ? 'text-brand dark:text-brand-400'
+                  : 'text-gray-400 dark:text-gray-500'
               "
             >
               {{ act.activity_type === 'entry' ? '↘' : '↗' }}
@@ -228,7 +228,7 @@ const proxyPhoto = photoUrl;
 
           <NuxtLink
             :to="`/individual/${individual.uuid}`"
-            class="block text-center text-[11px] text-gray-500 underline mt-2 py-1"
+            class="block text-center text-[11px] text-gray-500 dark:text-gray-400 underline mt-2 py-1"
           >
             Tüm bilgiler →
           </NuxtLink>

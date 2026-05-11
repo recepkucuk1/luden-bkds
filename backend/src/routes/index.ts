@@ -32,7 +32,10 @@
  */
 
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { networkInterfaces } from 'node:os';
+import { networkInterfaces, platform, release, arch, totalmem, freemem, uptime } from 'node:os';
+import { readFile, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from '../services/cache.js';
 import type { PresenceService } from '../services/presence.js';
@@ -90,6 +93,8 @@ const LOCALHOST_ONLY_PATHS = new Set<string>([
   '/api/auth/devices',
   '/api/auth/revoke-all',
   '/api/network/info',
+  '/api/diagnostics',
+  '/api/diagnostics/log',
 ]);
 
 export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Promise<void> {
@@ -144,11 +149,21 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
   };
 
   // ─── Health ───────────────────────────────────────────────
-  app.get('/healthz', async () => ({
-    ok: true,
-    time: new Date().toISOString(),
-    configured: configService.isConfigured(),
-  }));
+  app.get('/healthz', async () => {
+    const pollingStats = polling.getStats();
+    return {
+      ok: true,
+      time: new Date().toISOString(),
+      configured: configService.isConfigured(),
+      polling: {
+        running: pollingStats.isRunning,
+        inBackoff: pollingStats.isInBackoff,
+        consecutiveErrors: pollingStats.consecutiveErrors,
+        currentDelayMs: pollingStats.currentDelayMs,
+        lastSuccessAt: pollingStats.lastSuccessAt,
+      },
+    };
+  });
 
   // ─── Setup wizard ─────────────────────────────────────────
   app.get('/api/setup/status', async () => ({
@@ -210,6 +225,74 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
     code: authService.forceRotateCode(),
     expiresAt: new Date(authService.getPairCodeExpiry()).toISOString(),
   }));
+
+  // ─── Diagnostics (localhost-only) ──────────────────────────
+  // Mac/PC admin'in "neden çalışmıyor" diye sorgulayabileceği özet endpoint.
+  // Sistem + polling + BRY + auth durumu tek görsel. PII içermez.
+  app.get('/api/diagnostics', async () => {
+    const stats = polling.getStats();
+    const cfg = configService.publicInfo();
+    return {
+      app: {
+        time: new Date().toISOString(),
+        node: process.version,
+        platform: platform(),
+        platformRelease: release(),
+        arch: arch(),
+        backendUptimeSec: Math.floor(process.uptime()),
+        osUptimeSec: Math.floor(uptime()),
+        memUsedMB: Math.floor((totalmem() - freemem()) / 1024 / 1024),
+        memTotalMB: Math.floor(totalmem() / 1024 / 1024),
+      },
+      bry: {
+        configured: configService.isConfigured(),
+        baseUrl: cfg?.baseUrl ?? null,
+        username: cfg?.username ?? null,
+        configuredAt: cfg?.configuredAt ?? null,
+      },
+      polling: stats,
+      auth: {
+        registeredDevices: authService.tokenCount(),
+        pairCodeExpiresAt: new Date(authService.getPairCodeExpiry()).toISOString(),
+      },
+      secretStore: configService.describeSecretStore(),
+    };
+  });
+
+  // Log dosyası (Tauri'nin yazdığı tauri.log) — son N satır.
+  // Kullanıcı sorun bildirirken bunu paylaşabilsin diye.
+  app.get<{ Querystring: { lines?: string } }>(
+    '/api/diagnostics/log',
+    async (req, reply) => {
+      const dataDir = process.env.LUDEN_DATA_DIR;
+      if (!dataDir) {
+        return reply.code(404).send({ error: 'LUDEN_DATA_DIR set değil (dev mode?)' });
+      }
+      const logPath = join(dataDir, 'tauri.log');
+      if (!existsSync(logPath)) {
+        return { lines: [], path: logPath, size: 0, exists: false };
+      }
+      try {
+        const requestedLines = Math.min(
+          Math.max(parseInt(req.query.lines ?? '200', 10) || 200, 10),
+          2000,
+        );
+        const stats = await stat(logPath);
+        const content = await readFile(logPath, 'utf-8');
+        const allLines = content.split('\n').filter(Boolean);
+        const tail = allLines.slice(-requestedLines);
+        return {
+          path: logPath,
+          size: stats.size,
+          exists: true,
+          totalLines: allLines.length,
+          lines: tail,
+        };
+      } catch (err: any) {
+        return reply.code(500).send({ error: err?.message ?? 'log okunamadı' });
+      }
+    },
+  );
 
   // ─── Network info (localhost-only) ─────────────────────────
   // Telefondan bağlanmak için kullanıcıya gösterilecek Mac/PC LAN IP'si.

@@ -18,7 +18,7 @@ const { toTime } = useFormatters();
       :class="
         lastNotification.type === 'giriş'
           ? 'bg-brand text-white'
-          : 'bg-gray-700 text-white'
+          : 'bg-gray-700 dark:bg-gray-600 text-white'
       "
     >
       <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">

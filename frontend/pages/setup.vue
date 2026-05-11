@@ -123,7 +123,7 @@ const stepNumber = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white flex flex-col">
+  <div class="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
     <!-- ── Karşılama ────────────────────────────────────────── -->
     <Transition
       mode="out-in"
@@ -157,8 +157,8 @@ const stepNumber = computed(() => {
             <div class="flex items-start gap-3">
               <span class="text-brand text-lg leading-none mt-0.5">●</span>
               <div>
-                <p class="text-sm font-medium text-gray-900">Anlık takip</p>
-                <p class="text-[12px] text-gray-600 leading-relaxed">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Anlık takip</p>
+                <p class="text-[12px] text-gray-600 dark:text-gray-300 leading-relaxed">
                   BKDS giriş-çıkışları telefonunuza yansır
                 </p>
               </div>
@@ -166,8 +166,8 @@ const stepNumber = computed(() => {
             <div class="flex items-start gap-3">
               <span class="text-brand text-lg leading-none mt-0.5">●</span>
               <div>
-                <p class="text-sm font-medium text-gray-900">Otomatik ders hesabı</p>
-                <p class="text-[12px] text-gray-600 leading-relaxed">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Otomatik ders hesabı</p>
+                <p class="text-[12px] text-gray-600 dark:text-gray-300 leading-relaxed">
                   MEB ödenek için bireyin ders sayısı tek bakışta
                 </p>
               </div>
@@ -175,16 +175,16 @@ const stepNumber = computed(() => {
             <div class="flex items-start gap-3">
               <span class="text-brand text-lg leading-none mt-0.5">●</span>
               <div>
-                <p class="text-sm font-medium text-gray-900">Yerel ağ</p>
-                <p class="text-[12px] text-gray-600 leading-relaxed">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Yerel ağ</p>
+                <p class="text-[12px] text-gray-600 dark:text-gray-300 leading-relaxed">
                   Veri kurum dışına çıkmaz; KVKK uyumlu tasarım
                 </p>
               </div>
             </div>
           </div>
 
-          <p class="text-[12px] text-gray-500 leading-relaxed bg-gray-50 rounded-xl p-3 mb-6">
-            Kurulum yaklaşık <strong class="text-gray-700">2 dakika</strong>, bir
+          <p class="text-[12px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed bg-gray-50 dark:bg-gray-800 rounded-xl p-3 mb-6">
+            Kurulum yaklaşık <strong class="text-gray-700 dark:text-gray-200">2 dakika</strong>, bir
             kerelik. BRY sunucu adresi ve giriş bilgilerinize ihtiyaç olacak.
           </p>
 
@@ -206,11 +206,11 @@ const stepNumber = computed(() => {
         key="url"
         class="flex-1 flex flex-col"
       >
-        <header class="bg-white border-b border-gray-100 pt-[env(safe-area-inset-top)]">
+        <header class="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 pt-[env(safe-area-inset-top)]">
           <div class="px-4 py-3 flex items-center gap-3">
             <button
               v-if="!isEdit"
-              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 active:bg-gray-100"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
               aria-label="Geri"
               @click="goBack"
             >
@@ -219,32 +219,32 @@ const stepNumber = computed(() => {
             <NuxtLink
               v-else
               to="/settings"
-              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 active:bg-gray-100"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
               aria-label="İptal"
             >
               ‹
             </NuxtLink>
             <div class="flex-1 min-w-0">
-              <p class="text-[10px] uppercase tracking-wider text-gray-500">
+              <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 {{ isEdit ? 'Düzenleme' : `Adım ${stepNumber}/2` }}
               </p>
-              <h1 class="text-base font-semibold text-gray-900">Sunucu adresi</h1>
+              <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Sunucu adresi</h1>
             </div>
           </div>
           <!-- Progress bar (sadece yeni kurulum) -->
           <div v-if="!isEdit" class="px-4 pb-3 flex gap-1.5">
             <div class="h-1 flex-1 rounded-full bg-brand"></div>
-            <div class="h-1 flex-1 rounded-full bg-gray-200"></div>
+            <div class="h-1 flex-1 rounded-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-600"></div>
           </div>
         </header>
 
         <main class="flex-1 px-4 py-5 flex flex-col">
-          <p class="text-sm text-gray-700 mb-4 leading-relaxed">
+          <p class="text-sm text-gray-700 dark:text-gray-200 mb-4 leading-relaxed">
             BRY sunucusunun yerel ağ adresini girin. Genellikle kurumdaki INNOVA
             cihazının IP adresidir.
           </p>
 
-          <label class="block text-xs font-medium text-gray-700 mb-1">
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
             Sunucu adresi
           </label>
           <input
@@ -256,19 +256,19 @@ const stepNumber = computed(() => {
             autocapitalize="off"
             spellcheck="false"
             placeholder="http://192.168.X.X:3000"
-            class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                   focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white
+            class="w-full px-3 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm
+                   focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white dark:bg-gray-900
                    font-mono"
             @keyup.enter="isValidUrl && (currentStep = 'credentials')"
           />
 
-          <div class="mt-3 text-[11px] text-gray-600 leading-relaxed bg-amber-50 rounded-lg p-3">
-            <p class="font-medium text-amber-900 mb-1">Bilmiyor musunuz?</p>
-            <p class="text-amber-800">
+          <div class="mt-3 text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed bg-amber-50 dark:bg-amber-950/40 rounded-lg p-3">
+            <p class="font-medium text-amber-900 dark:text-amber-200 mb-1">Bilmiyor musunuz?</p>
+            <p class="text-amber-800 dark:text-amber-200">
               Kurumdaki INNOVA cihazını teknik olarak kuran kişiden öğrenin —
               "BRY sunucusunun yerel ağ IP'si ve port'u" olarak sorun.
-              Genellikle <code class="bg-amber-100 px-1 rounded">192.168.</code>
-              ile başlar, port <code class="bg-amber-100 px-1 rounded">:3000</code>'dir.
+              Genellikle <code class="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">192.168.</code>
+              ile başlar, port <code class="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">:3000</code>'dir.
             </p>
           </div>
 
@@ -291,20 +291,20 @@ const stepNumber = computed(() => {
         key="credentials"
         class="flex-1 flex flex-col"
       >
-        <header class="bg-white border-b border-gray-100 pt-[env(safe-area-inset-top)]">
+        <header class="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 pt-[env(safe-area-inset-top)]">
           <div class="px-4 py-3 flex items-center gap-3">
             <button
-              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 active:bg-gray-100"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
               aria-label="Geri"
               @click="goBack"
             >
               ‹
             </button>
             <div class="flex-1 min-w-0">
-              <p class="text-[10px] uppercase tracking-wider text-gray-500">
+              <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 {{ isEdit ? 'Düzenleme' : `Adım ${stepNumber}/2` }}
               </p>
-              <h1 class="text-base font-semibold text-gray-900">Giriş bilgileri</h1>
+              <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Giriş bilgileri</h1>
             </div>
           </div>
           <div v-if="!isEdit" class="px-4 pb-3 flex gap-1.5">
@@ -314,14 +314,14 @@ const stepNumber = computed(() => {
         </header>
 
         <main class="flex-1 px-4 py-5 flex flex-col">
-          <p class="text-sm text-gray-700 mb-4 leading-relaxed">
+          <p class="text-sm text-gray-700 dark:text-gray-200 mb-4 leading-relaxed">
             BRY web arayüzüne giriş yaparken kullandığınız kullanıcı adı ve
             şifre.
           </p>
 
           <div class="space-y-3">
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Kullanıcı adı
               </label>
               <input
@@ -333,14 +333,14 @@ const stepNumber = computed(() => {
                 autocapitalize="off"
                 spellcheck="false"
                 placeholder="örn: 12345678-1234567"
-                class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                       focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white
+                class="w-full px-3 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm
+                       focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white dark:bg-gray-900
                        font-mono"
               />
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Şifre
               </label>
               <input
@@ -348,11 +348,11 @@ const stepNumber = computed(() => {
                 type="password"
                 autocomplete="current-password"
                 placeholder="••••••••"
-                class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                       focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white"
+                class="w-full px-3 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm
+                       focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white dark:bg-gray-900"
                 @keyup.enter="submitCredentials"
               />
-              <p v-if="isEdit" class="text-[11px] text-gray-500 mt-1">
+              <p v-if="isEdit" class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                 Güvenlik için mevcut şifre gösterilmez. Yeniden girin.
               </p>
             </div>
@@ -360,12 +360,12 @@ const stepNumber = computed(() => {
 
           <div
             v-if="errorMsg"
-            class="mt-4 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-800"
+            class="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 text-sm text-red-800 dark:text-red-200"
           >
             {{ errorMsg }}
           </div>
 
-          <div class="mt-3 text-[11px] text-gray-500 leading-relaxed">
+          <div class="mt-3 text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">
             Bu bilgiler bilgisayarınızda macOS Keychain (Mac) ya da güvenli
             kayıtta saklanır. Kurum dışına çıkmaz.
           </div>
@@ -402,47 +402,47 @@ const stepNumber = computed(() => {
         </header>
 
         <main class="flex-1 px-5 py-6 flex flex-col">
-          <p class="text-sm text-gray-700 mb-5 leading-relaxed">
+          <p class="text-sm text-gray-700 dark:text-gray-200 mb-5 leading-relaxed">
             BKDS verileriniz şu an telefonunuzdan da erişilebilir. Birkaç ipucu:
           </p>
 
           <!-- Telefondan bağlanma bilgisi — büyük + actionable -->
           <div
             v-if="network.primaryUrl.value || pairCode"
-            class="bg-gray-50 rounded-xl p-4 mb-5 space-y-3"
+            class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-5 space-y-3"
           >
-            <p class="text-sm font-medium text-gray-900">
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
               Telefonunuzu şimdi bağlayabilirsiniz
             </p>
 
             <div v-if="network.primaryUrl.value">
-              <p class="text-[11px] text-gray-600 mb-1">
-                <strong class="text-gray-700">1.</strong>
+              <p class="text-[11px] text-gray-600 dark:text-gray-300 mb-1">
+                <strong class="text-gray-700 dark:text-gray-200">1.</strong>
                 Telefonun tarayıcısında bu adrese gidin:
               </p>
-              <div class="font-mono text-[13px] text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-2 select-all break-all">
+              <div class="font-mono text-[13px] text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 select-all break-all">
                 {{ network.primaryUrl.value }}
               </div>
             </div>
 
             <div v-if="pairCode">
-              <p class="text-[11px] text-gray-600 mb-1">
-                <strong class="text-gray-700">2.</strong>
+              <p class="text-[11px] text-gray-600 dark:text-gray-300 mb-1">
+                <strong class="text-gray-700 dark:text-gray-200">2.</strong>
                 Telefonda bu kodu girin:
               </p>
-              <div class="text-center text-2xl font-mono font-semibold tracking-[0.3em] text-brand bg-white py-2.5 rounded-lg select-all">
+              <div class="text-center text-2xl font-mono font-semibold tracking-[0.3em] text-brand bg-white dark:bg-gray-900 py-2.5 rounded-lg select-all">
                 {{ pairCode }}
               </div>
             </div>
 
-            <p class="text-[11px] text-gray-500 leading-relaxed">
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">
               Telefon kurum WiFi'sinde olmalı. Kod 10 dakika geçerli; yenisi
               gerekirse Ayarlar → Cihaz Eşleştirme.
             </p>
 
             <p
               v-if="network.isWindowsTauri.value"
-              class="text-[11px] text-amber-800 bg-amber-50 rounded-lg p-2 leading-relaxed"
+              class="text-[11px] text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
             >
               <strong>Windows kullanıyorsanız:</strong> ilk açılışta Windows
               Firewall <strong>"brytakip-backend ağa erişim istiyor"</strong> sorusu
@@ -453,26 +453,26 @@ const stepNumber = computed(() => {
 
           <!-- Diğer ipuçları -->
           <div class="space-y-3 mb-6">
-            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
                 ◐
               </span>
               <div>
-                <p class="text-sm font-medium text-gray-900">Bildirimleri açın</p>
-                <p class="text-[12px] text-gray-600 leading-relaxed mt-0.5">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Bildirimleri açın</p>
+                <p class="text-[12px] text-gray-600 dark:text-gray-300 leading-relaxed mt-0.5">
                   Yeni giriş-çıkış olduğunda haber alın. Ayarlar → Yerel
                   Bildirim'den izin verin.
                 </p>
               </div>
             </div>
 
-            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
                 ⟲
               </span>
               <div>
-                <p class="text-sm font-medium text-gray-900">Otomatik çalışma</p>
-                <p class="text-[12px] text-gray-600 leading-relaxed mt-0.5">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Otomatik çalışma</p>
+                <p class="text-[12px] text-gray-600 dark:text-gray-300 leading-relaxed mt-0.5">
                   Bilgisayar açılınca uygulama kendiliğinden başlar. Tray
                   ikonundan her zaman ulaşabilirsiniz.
                 </p>

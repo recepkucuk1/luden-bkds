@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // 'media' = sistem tercihine göre otomatik (iOS Light/Dark, macOS Görünüm, Windows mod).
+  // Kullanıcıya manuel toggle vermiyoruz — müdahalesizlik felsefesi.
+  darkMode: 'media',
   content: [
     './components/**/*.{vue,js,ts}',
     './layouts/**/*.vue',
@@ -14,6 +17,8 @@ export default {
           light: '#1d9e75',
           50: '#e1f5ee',
           100: '#9fe1cb',
+          // Dark mode'da hafif daha açık ton — koyu zeminde kontrast için
+          400: '#2eb583',
         },
       },
       fontFamily: {

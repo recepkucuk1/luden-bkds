@@ -110,7 +110,28 @@ export const useBkds = () => {
           return;
         }
       }
-      error.value = err?.message ?? 'Sunucuya bağlanılamadı';
+
+      // Hata mesajını duruma göre insancıllaştır
+      const status = err?.response?.status;
+      const backendError = err?.data?.error;
+      if (status === 502) {
+        // Backend BRY'ye ulaşamadı
+        error.value = backendError ?? 'BRY sunucusuna ulaşılamıyor. Sunucu açık mı, aynı ağda mısınız?';
+      } else if (status === 503) {
+        // Henüz yapılandırılmamış (middleware zaten /setup'a göndermeli)
+        error.value = 'BRY yapılandırılmamış. Kurulum sayfasına yönlendiriliyorsunuz...';
+      } else if (status === 504 || err?.message?.includes('timeout')) {
+        error.value = 'Bağlantı zaman aşımına uğradı. BRY sunucusu yavaş veya ulaşılamaz.';
+      } else if (err?.message?.includes('fetch failed') || err?.message?.includes('Failed to fetch') || !status) {
+        // Network seviyesi — backend'e (Mac uygulamasına) ulaşılamadı
+        if (auth.isLocalhost()) {
+          error.value = 'Backend ile bağlantı kesildi. Uygulama beklenmedik şekilde kapanmış olabilir.';
+        } else {
+          error.value = 'Bilgisayardaki BRY Takip uygulamasına ulaşılamıyor. Bilgisayar açık mı, aynı WiFi\'de misiniz?';
+        }
+      } else {
+        error.value = backendError ?? err?.message ?? 'Beklenmedik bir hata oluştu';
+      }
     } finally {
       loading.value = false;
     }

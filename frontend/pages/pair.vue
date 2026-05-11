@@ -43,7 +43,7 @@ const submit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white flex flex-col">
+  <div class="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
     <header class="bg-brand text-white px-4 py-5 pt-[max(env(safe-area-inset-top),1.25rem)]">
       <p class="text-[10px] uppercase tracking-wider text-white/70">Cihaz Eşleştirme</p>
       <h1 class="text-lg font-semibold">Kodu girin</h1>
@@ -66,13 +66,13 @@ const submit = async () => {
         maxlength="6"
         placeholder="000000"
         class="w-full text-center text-3xl font-mono font-semibold tracking-[0.5em]
-               px-3 py-4 bg-gray-50 border border-gray-200 rounded-xl
-               focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white"
+               px-3 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl
+               focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white dark:bg-gray-900"
       />
 
       <div
         v-if="errorMsg"
-        class="p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-800"
+        class="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 text-sm text-red-800 dark:text-red-200"
       >
         {{ errorMsg }}
       </div>
@@ -86,8 +86,8 @@ const submit = async () => {
         {{ status === 'submitting' ? 'Doğrulanıyor...' : 'Eşleştir' }}
       </button>
 
-      <div class="pt-4 text-[11px] text-gray-500 leading-relaxed border-t border-gray-100 mt-6">
-        <p class="font-medium text-gray-700 mb-1">Kod nereden alınır?</p>
+      <div class="pt-4 text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed border-t border-gray-100 dark:border-gray-800 mt-6">
+        <p class="font-medium text-gray-700 dark:text-gray-200 mb-1">Kod nereden alınır?</p>
         <p>
           Bilgisayardaki BRY Takip uygulamasını açın → Ayarlar →
           "Cihaz Eşleştirme" bölümünde 6 haneli kod görünür.

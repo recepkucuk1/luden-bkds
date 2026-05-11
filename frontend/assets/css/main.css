@@ -7,7 +7,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Light mode (default) */
 html, body {
   background: #ffffff;
   color: #111827;
+}
+
+/* Dark mode — sistem tercihine göre otomatik
+   (iOS Light/Dark, macOS Görünüm, Windows tema) */
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background: #0b1115;
+    color: #e7eaee;
+  }
 }

@@ -55,7 +55,7 @@ const visible = computed(() => {
 
           <div v-if="status === 'idle' && updateAvailable" class="flex gap-2 mt-2">
             <button
-              class="px-3 py-1.5 bg-white text-brand text-xs font-medium rounded-lg active:opacity-80"
+              class="px-3 py-1.5 bg-white dark:bg-gray-900 text-brand text-xs font-medium rounded-lg active:opacity-80"
               @click="onInstall"
             >
               Şimdi güncelle
