@@ -9,8 +9,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": false,
+    "sourceMap": false,
     "types": ["node"]
   },
-  "include": ["api/**/*", "lib/**/*"]
+  "include": ["src/**/*"]
 }
