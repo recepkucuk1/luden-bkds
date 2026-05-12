@@ -1,231 +1,193 @@
 # BRY Takip SaaS API
 
-`api.brytakip.com` — Fastify + Prisma + Supabase Postgres, **Hostinger Business Node.js**'de host edilir.
+`api.brytakip.com` — Fastify + Prisma + **Hostinger MySQL**, Hostinger Business Node.js'de host.
 
-## Mimari
+## Mimari (tamamı Hostinger)
 
 ```
 brytakip.com (Hostinger statik — public_html/)
-       │  POST /api/signup, GET/POST /api/admin/*
+       │ POST /api/signup, GET/POST /api/admin/*
        ↓
 api.brytakip.com (Hostinger Node.js app)
-       │  Prisma queries
+       │ Prisma queries
        ↓
-Supabase Postgres (Frankfurt)
+Hostinger MySQL (aynı sunucu, localhost:3306)
 ```
 
-Vercel YOK — her şey Hostinger üzerinde, DB sadece Supabase'de.
+Tek sağlayıcı, tek dashboard, tek fatura.
 
 ## Klasör
 
 ```
 saas-api/
-├── prisma/
-│   └── schema.prisma           Kurum + License + Payment models
+├── prisma/schema.prisma     Kurum + License + Payment (MySQL)
 ├── src/
-│   ├── server.ts               Fastify entry (port 3000 default)
-│   ├── lib/
-│   │   ├── prisma.ts           Prisma client singleton
-│   │   └── auth.ts             admin token kontrolü + key generator
-│   └── routes/
-│       ├── signup.ts           POST /api/signup
-│       ├── license.ts          POST /api/license/verify, POST /api/license/issue
-│       └── admin.ts            GET /api/admin/kurums, POST /api/admin/payment
-├── dist/                       (TS derleme çıktısı — gitignore'da)
+│   ├── server.ts            Fastify entry
+│   ├── lib/{prisma,auth}.ts
+│   └── routes/{signup,license,admin}.ts
 ├── package.json
 ├── tsconfig.json
-├── .env.example
-└── README.md
+└── .env.example
 ```
 
-## İlk kurulum — Recep'in adımları
+## Recep'in hPanel'de yapacakları (~20 dk)
 
-### 1. Supabase projesi (5 dk)
+Aşağıdaki 1-4 adımları **Recep yapacak** (hPanel UI clicks).
+Adım 5-10'u Claude (Bash agent) SSH ile yapacak.
 
-1. https://supabase.com → "Start your project" → GitHub ile gir
-2. **New project**:
-   - Name: `brytakip`
-   - Database password: güçlü şifre + **kaydet**
-   - Region: **Central EU (Frankfurt)** ← Türkiye'ye yakın, ücretsiz tier
-3. ~1-2 dk bekle, proje hazır olunca:
-4. Sol menüde **Project Settings → Database → Connection string**:
-   - **"Transaction"** sekmesi (port 6543) → `DATABASE_URL`
-   - **"Session"** sekmesi (port 5432) → `DIRECT_URL`
-   - URL'lerdeki `[YOUR-PASSWORD]` yerine kaydettiğin şifre
+### 1. MySQL veritabanı oluştur
 
-### 2. Admin token üret (10 sn)
+1. hPanel → **MySQL Databases**
+2. **Create new database**:
+   - Database name: `brytakip` (Hostinger otomatik `u1234567_brytakip` formatına çevirir)
+   - Database user: `brytakip` (aynı)
+   - Password: güçlü şifre üret + kaydet
+3. Oluşan **Database name, Username, Password**'ü bir kenara not et.
 
-Terminal:
-```bash
-openssl rand -hex 32
-```
+### 2. Subdomain `api.brytakip.com` aç
 
-Çıkan 64-char hex'i kaydet → `ADMIN_TOKEN` olacak.
+1. hPanel → **Subdomains** → **Create**
+2. Subdomain: `api`, Domain: `brytakip.com`
+3. SSL Let's Encrypt otomatik kurulur (5-10 dk içinde).
 
-### 3. İlk DB migration (3 dk, Mac'ten)
+### 3. Node.js app oluştur
 
-```bash
-cd /Users/recepkucuk/Downloads/luden-bkds/saas-api
-npm install
-cp .env.example .env
-# .env'i editor'la aç:
-#   DATABASE_URL = Supabase Transaction URL (port 6543)
-#   DIRECT_URL   = Supabase Session URL (port 5432)
-#   ADMIN_TOKEN  = openssl ile üretilen
+1. hPanel → **Advanced → Node.js**
+2. **Create application**:
+   - Node.js version: **20.x**
+   - Application mode: **Production**
+   - Application root: `domains/brytakip.com/public_html/api` (yukarıdaki subdomain folder'ı)
+   - Application URL: `api.brytakip.com`
+   - Application startup file: `saas-api/dist/server.js`
+3. Oluştur.
 
-npx prisma migrate dev --name init
-```
-
-Bu:
-- `prisma/migrations/000_init/migration.sql` üretir
-- Supabase'e schema uygular
-- Prisma Client generate eder
-
-Migration dosyalarını commit'le:
-```bash
-cd /Users/recepkucuk/Downloads/luden-bkds
-git add saas-api/prisma/migrations/
-git commit -m "chore(saas-api): initial migration"
-git push
-```
-
-### 4. Hostinger Node.js app kurulumu (10 dk)
-
-1. Hostinger hPanel'a gir → `brytakip.com` domain'in
-2. **Advanced** menüsü → **Node.js**
-3. **Create application**:
-   - **Node.js version**: 20.x (en yenisini seç)
-   - **Application mode**: Production
-   - **Application root**: `domains/brytakip.com/public_html/api` (subdomain için ayrı klasör)
-   - **Application URL**: `api.brytakip.com`
-   - **Application startup file**: `dist/server.js`
-4. **Create** — Hostinger temel app'i oluşturur
-
-### 5. Kodu Hostinger'a aktar — iki yol var
-
-**A) Git deploy (önerilen, auto-deploy on push)**
-
-1. Hostinger hPanel → **Advanced → Git**
-2. **Create repository**:
-   - Repository URL: `https://github.com/recepkucuk1/luden-bkds.git`
-   - Branch: `main`
-   - Repository path: `domains/brytakip.com/public_html/api`
-3. (Hostinger PRO+ planda) **Automatic deployment**'ı aç → her push'ta otomatik pull
-4. İlk pull: panel'den manuel "Pull" tıkla
-
-Hostinger sadece `saas-api/` klasörünü çekmiyor — tüm repo'yu çeker. Bu sorun değil, Node app `dist/server.js` startup file'ı kullandığı için `saas-api/dist/server.js` yolunu doğru çalıştırır. Detay aşağıda Adım 7.
-
-**B) Manuel upload (Git çalışmazsa)**
-
-```bash
-cd /Users/recepkucuk/Downloads/luden-bkds/saas-api
-npm install      # node_modules + prisma generate
-npm run build    # dist/ üretir
-# Sonra dist/ + package.json + prisma/ + node_modules/ → Hostinger File Manager'a yükle
-```
-
-### 6. Environment variables (Hostinger Node Manager)
+### 4. Environment Variables ekle
 
 hPanel → Node.js app → **Environment Variables**:
 
 | Name | Value |
 |---|---|
-| `DATABASE_URL` | Supabase Transaction URL (port 6543) |
-| `DIRECT_URL` | Supabase Session URL (port 5432) |
-| `ADMIN_TOKEN` | openssl rand -hex 32 ile ürettiğin |
+| `DATABASE_URL` | `mysql://u1234567_brytakip:PASS@localhost:3306/u1234567_brytakip` (1. adımdaki bilgiler) |
+| `ADMIN_TOKEN` | terminal `openssl rand -hex 32` ile üret |
 | `NODE_ENV` | `production` |
 
-### 7. Application path düzeltmesi
+### 5. SSH erişimi
 
-Hostinger Node.js app subdomain için tipik yapı:
-- `domains/brytakip.com/public_html/api/` ← uygulama burada
-- Git pull edince tüm repo `api/` klasörüne gelir → `api/saas-api/dist/server.js`
+hPanel → **Advanced → SSH Access** → enable. Bana paylaşman gereken bilgiler:
+- SSH hostname (örn. `194.62.X.X` veya `ssh.brytakip.com`)
+- Port (genelde 65002)
+- Username (örn. `u1234567`)
+- Password — Hostinger SSH password'ü
 
-İki seçenek:
-- (a) **Application startup file** → `saas-api/dist/server.js` ayarla
-- (b) Veya `package.json`'ı `saas-api/` köküne taşı (subtree split — daha temiz, sonra düzenleriz)
+⚠ Güvenlik: paylaştıktan sonra deploy bitince hPanel'den SSH parolasını rotate edebilirsin.
 
-Şimdilik (a) kolay: hPanel'da startup file path'ini değiştir, kaydet.
+## Claude'un SSH ile yapacakları
 
-### 8. Build + start
+Sen 1-5'i bitirip bilgileri verdiğinde, ben:
 
-hPanel → Node.js app → **Run NPM Install** tıkla. `prisma generate` postinstall ile otomatik çalışır.
+1. **SSH bağlan + repo çek**:
+   ```bash
+   ssh -p 65002 u1234567@host
+   cd domains/brytakip.com/public_html/api
+   git clone https://github.com/recepkucuk1/luden-bkds.git .
+   ```
 
-Sonra **Run NPM Script** → `build` seç → tsc derler `dist/`'e.
+2. **Bağımlılık kurulumu**:
+   ```bash
+   cd saas-api
+   npm install
+   # postinstall otomatik `prisma generate` çağırır
+   ```
 
-Sonra **Run NPM Script** → `db:deploy` ile Prisma migration'ları production'a uygula (zaten Supabase'de ama emin olmak için).
+3. **DB migration uygula**:
+   ```bash
+   npx prisma migrate deploy
+   # initial migration MySQL tablolarını oluşturur
+   ```
 
-Son olarak **Restart application** tıkla.
+4. **TypeScript build**:
+   ```bash
+   npm run build
+   # dist/server.js + tüm route'ler derlenir
+   ```
 
-Test:
+5. **Node app restart** (hPanel'den de yapılabilir, SSH'tan touch ile de):
+   ```bash
+   touch tmp/restart.txt
+   # Hostinger Node app bu dosyaya bakar, restart eder
+   ```
+
+6. **Smoke test**:
+   ```bash
+   curl https://api.brytakip.com/healthz
+   # {"ok":true,"time":"...","uptime":N}
+   ```
+
+7. **İlk signup denemesi**:
+   ```bash
+   curl -X POST https://api.brytakip.com/api/signup \
+     -H "Content-Type: application/json" \
+     -d '{"kurum":"Test","yetkili":"X","sehir":"İzmir","email":"t@test.com","telefon":"05551234567","plan":"lite"}'
+   # {"ok":true,"kurumId":"...","alreadyExists":false}
+   ```
+
+8. **MySQL tablo doğrulaması** (hPanel phpMyAdmin'den veya SSH):
+   ```bash
+   mysql -u u1234567_brytakip -p u1234567_brytakip -e "SELECT * FROM Kurum;"
+   # Az önce eklenen test kaydı görünmeli
+   ```
+
+## Marketing dosyalarını yükleme
+
+`public_html/` köküne `marketing/index.html` ve `marketing/admin.html` yüklenir.
+Hostinger File Manager'dan drag-drop veya SSH `scp`:
+
 ```bash
-curl https://api.brytakip.com/healthz
-# {"ok":true,"time":"...","uptime":N}
+scp -P 65002 marketing/index.html u1234567@host:domains/brytakip.com/public_html/
+scp -P 65002 marketing/admin.html u1234567@host:domains/brytakip.com/public_html/
 ```
 
-### 9. DNS — `api.brytakip.com` subdomain
-
-hPanel → **Subdomains** → **Create new** → `api` (subdomain). Hostinger otomatik DNS A record kurar, SSL Let's Encrypt otomatik gelir (5-10 dk).
+(Bunu da SSH ile birlikte yaparım.)
 
 ## Geliştirme (lokalde)
 
+Lokal dev için ya Hostinger remote MySQL'e bağlan ya da lokal MySQL kur.
+
+Hostinger remote için:
+- hPanel → MySQL → **Remote Access** → IP whitelistine kendi IP'ni ekle
+- DATABASE_URL host'u `localhost` yerine Hostinger MySQL host'u
+
+Veya Docker ile lokal MySQL (basit):
+```bash
+docker run -d --name brytakip-mysql -e MYSQL_ROOT_PASSWORD=devpass -e MYSQL_DATABASE=brytakip -p 3306:3306 mysql:8
+# DATABASE_URL=mysql://root:devpass@localhost:3306/brytakip
+```
+
+Sonra:
 ```bash
 cd saas-api
 npm install
-cp .env.example .env
-# .env doldur (Supabase URL'leri + ADMIN_TOKEN)
-npm run dev    # tsx watch ile localhost:3000'de çalışır
-```
-
-Test:
-```bash
-curl -X POST http://localhost:3000/api/signup \
-  -H "Content-Type: application/json" \
-  -d '{"kurum":"Test","yetkili":"X","sehir":"İzmir","email":"t@t.com","telefon":"05551234567","plan":"lite"}'
+npx prisma migrate dev --name init
+npm run dev  # tsx watch
 ```
 
 ## Endpoint'ler
 
 ### Public
-
-**POST /api/signup**
-
-Marketing form'undan gelir.
-
-Body: `{ kurum, yetkili, sehir, email, telefon, plan: 'lite'|'standart'|'pro', source? }`
-
-Response 200: `{ ok: true, kurumId, alreadyExists: boolean }`
-
-**POST /api/license/verify**
-
-Mac/Windows uygulaması açılışta çağırır.
-
-Body: `{ key: "BRY-X3K2-...", machineId: "uuid" }`
-
-Response 200: `{ status: "ACTIVE"|"EXPIRED"|"PENDING", plan, expiresAt }`
+- `POST /api/signup` — marketing form
+- `POST /api/license/verify` — uygulama açılışta
+- `GET  /healthz` — uptime monitör
 
 ### Admin (Authorization: Bearer ADMIN_TOKEN)
-
-**GET /api/admin/kurums?q=arama&plan=STANDART&limit=50&offset=0**
-
-Kurum listesi, filtreleme + arama.
-
-**POST /api/license/issue**
-
-Body: `{ kurumId, expiresInDays?: 365, status?: 'PENDING'|'ACTIVE' }`
-
-**POST /api/admin/payment**
-
-Body: `{ kurumId, amount, method: 'HAVALE'|'IYZICO'|'MANUEL'|'OTHER', paidAt?, invoiceNo?, notes? }`
-
-### Health
-
-**GET /healthz** — public, monitoring için
+- `GET  /api/admin/kurums?q=&plan=&limit=50` — liste + arama
+- `POST /api/license/issue` — Recep lisans üretir
+- `POST /api/admin/payment` — Recep ödeme kaydeder
 
 ## Sıradaki işler
 
-- [ ] **Hostinger Node app kurulumu** — Recep yapacak (yukarı adım 4-9)
-- [ ] **Marketing'i Hostinger public_html'e yükle** — `marketing/index.html`, `marketing/admin.html`
-- [ ] **Tauri app'ten lisans ping'i** — Mac/Windows uygulaması açılışta `/api/license/verify`
-- [ ] **Email bildirimi** — yeni signup geldiğinde Recep'e mail (Resend / Hostinger mail SMTP)
-- [ ] **iyzico entegrasyonu** — Faz 3, otomatik tahsilat
+- [ ] Recep hPanel adımları (1-5)
+- [ ] Claude SSH deploy (6 adım yukarıda)
+- [ ] Marketing'i public_html'e koy
+- [ ] Tauri app'ten lisans ping'i — sonraki commit
+- [ ] Hostinger SMTP ile email notification — yeni signup'ta Recep'e mail
+- [ ] iyzico — Faz 3
