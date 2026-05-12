@@ -1,0 +1,105 @@
+// BRY Takip SaaS API — Prisma schema
+// Database: Supabase (Postgres, Frankfurt region)
+//
+// Migration komutları:
+//   npx prisma migrate dev --name <isim>     (dev'de yeni migration)
+//   npx prisma migrate deploy                 (production'da migrate uygula)
+//   npx prisma studio                         (GUI inspector)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")       // pooler URL (port 6543, PgBouncer)
+  directUrl = env("DIRECT_URL")          // migration için direkt URL (port 5432)
+}
+
+// ─── Kurum (kayıt olmuş özel eğitim merkezi) ─────────────────
+model Kurum {
+  id          String    @id @default(cuid())
+  ad          String                      // kurum adı (örn: "Luden Keşif Özel Eğitim")
+  yetkili     String                      // yetkili kişi adı soyadı
+  email       String    @unique
+  telefon     String                      // WhatsApp
+  sehir       String
+  plan        Plan      @default(LITE)
+  source      String?                     // "landing", "referral", "direct"
+  notes       String?   @db.Text          // Recep'in manuel notları
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  licenses    License[]
+  payments    Payment[]
+
+  @@index([createdAt])
+  @@index([plan])
+  @@index([email])
+}
+
+enum Plan {
+  LITE
+  STANDART
+  PRO
+}
+
+// ─── Lisans (kurum'a verilen anahtar) ───────────────────────
+model License {
+  id          String         @id @default(cuid())
+  kurumId     String
+  kurum       Kurum          @relation(fields: [kurumId], references: [id], onDelete: Cascade)
+  key         String         @unique     // örn: "BRY-X3K2-9HFA-PQRS-TUVW"
+  machineId   String?                     // ilk verify'da bağlanır (donanım fingerprint DEĞİL — install-time UUID)
+  status      LicenseStatus  @default(PENDING)
+  issuedAt    DateTime       @default(now())
+  expiresAt   DateTime
+  lastPingAt  DateTime?                   // uygulama açılışta /verify çağırır
+  revokedAt   DateTime?
+  revokeReason String?
+
+  @@index([kurumId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum LicenseStatus {
+  PENDING       // henüz aktif değil (Recep manuel onay bekliyor)
+  ACTIVE        // çalışıyor
+  EXPIRED       // süresi dolmuş
+  REVOKED       // iptal edilmiş
+}
+
+// ─── Ödeme kayıtları ────────────────────────────────────────
+model Payment {
+  id          String         @id @default(cuid())
+  kurumId     String
+  kurum       Kurum          @relation(fields: [kurumId], references: [id], onDelete: Cascade)
+  amount      Decimal        @db.Decimal(10, 2)     // ₺
+  method      PaymentMethod
+  status      PaymentStatus  @default(PENDING)
+  receiptUrl  String?                      // havale dekontu (Supabase Storage URL)
+  invoiceNo   String?                      // e-Fatura no
+  externalId  String?                      // iyzico transaction id vs.
+  paidAt      DateTime?
+  notes       String?        @db.Text
+  createdAt   DateTime       @default(now())
+
+  @@index([kurumId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentMethod {
+  HAVALE
+  IYZICO
+  MANUEL
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}

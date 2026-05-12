@@ -1,0 +1,25 @@
+{
+  "name": "brytakip-saas-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BRY Takip — brytakip.com için SaaS API (Vercel + Prisma + Supabase)",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@vercel/node": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prisma": "^5.22.0",
+    "typescript": "^5.6.0",
+    "vercel": "^39.0.0"
+  }
+}
