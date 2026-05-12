@@ -2,6 +2,7 @@
 const { snapshot, loading, error, fetchSnapshot, connectWs, disconnectWs } = useBkds();
 const { relative } = useFormatters();
 const { autoCheckOnStartup } = useUpdater();
+const license = useLicense();
 
 // Tüm akordeonların paylaştığı reactive "şu an" — her dakika tik atar
 // İçerideyken süre canlı sayar
@@ -17,6 +18,12 @@ onMounted(() => {
   }, 60000);
   // Tauri içindeyse 5 sn sonra güncelleme kontrolü (PWA'da no-op)
   autoCheckOnStartup(5000);
+
+  // Lisans cache'ini yükle, 24h geçmişse sessiz re-verify et
+  license.loadCached();
+  if (license.status.value?.key && license.shouldReverify()) {
+    license.reverify().catch(() => { /* internet yoksa cache geçerli */ });
+  }
 });
 
 onUnmounted(() => {
@@ -91,6 +98,41 @@ const cameraWarning = computed(() => {
     <AppHeader />
     <LiveNotification />
     <UpdateBanner />
+
+    <!-- Lisans uyarıları — sadece sorunlu durumlarda görünür -->
+    <NuxtLink
+      v-if="license.status.value?.key && !license.isActive.value && !license.isPending.value"
+      to="/settings"
+      class="block mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm active:opacity-80"
+    >
+      <p class="font-medium">
+        Lisans uyarısı:
+        {{
+          license.isExpired.value
+            ? 'süresi doldu'
+            : license.isRevoked.value
+              ? 'iptal edilmiş'
+              : license.isWrongMachine.value
+                ? 'başka bir cihaza bağlı'
+                : 'geçersiz'
+        }}
+      </p>
+      <p class="text-[11px] mt-0.5 opacity-80">Ayarlar → Lisansı yenileyin</p>
+    </NuxtLink>
+    <NuxtLink
+      v-else-if="
+        license.isActive.value
+          && license.daysUntilExpiry.value !== null
+          && license.daysUntilExpiry.value <= 30
+      "
+      to="/settings"
+      class="block mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-sm active:opacity-80"
+    >
+      <p class="font-medium">
+        Lisansınızın bitmesine {{ license.daysUntilExpiry.value }} gün kaldı
+      </p>
+      <p class="text-[11px] mt-0.5 opacity-80">Yenileme için brytakip.com</p>
+    </NuxtLink>
 
     <div v-if="error" class="mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm">
       <p class="font-medium">Veriler yüklenemedi</p>

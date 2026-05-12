@@ -5,6 +5,72 @@ const updater = useUpdater();
 const autostart = useAutostart();
 const network = useNetworkInfo();
 const theme = useTheme();
+const license = useLicense();
+
+// ── Lisans aktivasyonu ──────────────────────────────────────────
+const licenseKeyInput = ref('');
+const licenseError = ref<string | null>(null);
+const licenseSubmitting = ref(false);
+const showLicenseEdit = ref(false);
+
+const submitLicense = async () => {
+  licenseError.value = null;
+  licenseSubmitting.value = true;
+  try {
+    const r = await license.verify(licenseKeyInput.value);
+    if (r.status === 'ACTIVE' || r.status === 'PENDING') {
+      licenseKeyInput.value = '';
+      showLicenseEdit.value = false;
+    } else if (r.status === 'NETWORK_ERROR') {
+      licenseError.value = r.message ?? 'Sunucuya bağlanılamadı';
+    } else {
+      licenseError.value =
+        r.message ?? `Lisans geçersiz (${r.status})`;
+    }
+  } catch (e: any) {
+    licenseError.value = e?.message ?? 'Beklenmeyen hata';
+  } finally {
+    licenseSubmitting.value = false;
+  }
+};
+
+const reverifyNow = async () => {
+  licenseError.value = null;
+  const r = await license.reverify(true);
+  if (r?.status === 'NETWORK_ERROR') {
+    licenseError.value = r.message ?? 'Sunucuya bağlanılamadı';
+  }
+};
+
+const planLabel = computed(() => {
+  switch (license.plan.value) {
+    case 'PRO': return 'PRO';
+    case 'STANDART': return 'Standart';
+    case 'LITE': return 'Lite';
+    default: return 'Lite';
+  }
+});
+
+const statusLabel = computed(() => {
+  const s = license.status.value?.status;
+  switch (s) {
+    case 'ACTIVE': return 'Aktif';
+    case 'PENDING': return 'Onay bekliyor';
+    case 'EXPIRED': return 'Süresi doldu';
+    case 'REVOKED': return 'İptal edilmiş';
+    case 'WRONG_MACHINE': return 'Başka cihaza bağlı';
+    case 'INVALID': return 'Geçersiz';
+    case 'NETWORK_ERROR': return 'Bağlantı sorunu';
+    default: return 'Lisans yok';
+  }
+});
+
+const statusVariant = computed<'green' | 'amber' | 'red' | 'gray'>(() => {
+  if (license.isActive.value) return 'green';
+  if (license.isPending.value) return 'amber';
+  if (license.isExpired.value || license.isRevoked.value || license.isWrongMachine.value || license.isInvalid.value) return 'red';
+  return 'gray';
+});
 
 // Yerel bildirim — context'e göre Tauri plugin veya browser Notification API.
 // İzin reddedilince platforma özel kurtarma talimatı gösterilir (URL barı yok vs).
@@ -132,6 +198,12 @@ onMounted(async () => {
     isPwa.value = window.matchMedia('(display-mode: standalone)').matches
       || (window.navigator as any).standalone === true;
     isIos.value = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }
+
+  // Lisans cache'i yükle, 24h geçmişse sessiz re-verify
+  license.loadCached();
+  if (license.status.value?.key && license.shouldReverify()) {
+    license.reverify().catch(() => { /* network hatası önemli değil */ });
   }
   try {
     const r = await $fetch<{ configured: boolean; info: any }>(
@@ -409,6 +481,122 @@ const notInSecureContext = computed(() => {
             BRY bilgilerini değiştir
           </NuxtLink>
         </div>
+      </div>
+    </section>
+
+    <!-- BRY Takip Lisansı -->
+    <section class="mt-5 px-4">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+        BRY Takip Lisansı
+      </h2>
+      <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5">
+        <!-- Mevcut lisans bilgileri -->
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">Plan</span>
+          <span
+            class="text-xs px-2 py-0.5 rounded-full font-medium"
+            :class="{
+              'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200': license.plan.value === 'PRO',
+              'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200': license.plan.value === 'STANDART',
+              'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300': license.plan.value === 'LITE',
+            }"
+          >
+            {{ planLabel }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">Durum</span>
+          <span
+            class="text-xs px-2 py-0.5 rounded-full"
+            :class="{
+              'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200': statusVariant === 'green',
+              'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200': statusVariant === 'amber',
+              'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200': statusVariant === 'red',
+              'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300': statusVariant === 'gray',
+            }"
+          >
+            {{ statusLabel }}
+          </span>
+        </div>
+        <div v-if="license.expiresAt.value" class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">Bitiş</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400">
+            {{ new Date(license.expiresAt.value).toLocaleDateString('tr-TR') }}
+            <span v-if="license.daysUntilExpiry.value !== null" class="ml-1">
+              ({{ license.daysUntilExpiry.value }} gün)
+            </span>
+          </span>
+        </div>
+        <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">Anahtar</span>
+          <span class="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate ml-2">
+            {{ license.status.value.key }}
+          </span>
+        </div>
+
+        <!-- Aktivasyon / değiştirme formu -->
+        <div
+          v-if="!license.status.value?.key || showLicenseEdit"
+          class="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2"
+        >
+          <label class="block text-[11px] text-gray-600 dark:text-gray-300">
+            Lisans Anahtarı
+          </label>
+          <input
+            v-model="licenseKeyInput"
+            type="text"
+            placeholder="BRY-XXXX-XXXX-XXXX-XXXX"
+            class="w-full px-3 py-2 text-sm font-mono uppercase tracking-wider bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
+            :disabled="licenseSubmitting"
+            @keyup.enter="submitLicense"
+          />
+          <p v-if="licenseError" class="text-[11px] text-red-600 dark:text-red-400">
+            {{ licenseError }}
+          </p>
+          <div class="flex gap-2">
+            <button
+              :disabled="!licenseKeyInput.trim() || licenseSubmitting"
+              class="flex-1 px-3 py-1.5 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="submitLicense"
+            >
+              {{ licenseSubmitting ? 'Doğrulanıyor...' : 'Aktive Et' }}
+            </button>
+            <button
+              v-if="license.status.value?.key && showLicenseEdit"
+              class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg active:opacity-80"
+              @click="showLicenseEdit = false; licenseKeyInput = ''; licenseError = null"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+
+        <!-- Mevcut lisans aksiyonları -->
+        <div v-else class="pt-2 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+          <button
+            class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80"
+            @click="showLicenseEdit = true; licenseKeyInput = ''"
+          >
+            Lisansı değiştir
+          </button>
+          <button
+            :disabled="license.verifying.value"
+            class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80 disabled:opacity-50"
+            @click="reverifyNow"
+          >
+            {{ license.verifying.value ? 'Kontrol ediliyor...' : 'Yeniden doğrula' }}
+          </button>
+        </div>
+
+        <!-- Açıklama (lisans yokken) -->
+        <p
+          v-if="!license.status.value?.key"
+          class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pt-2 border-t border-gray-200 dark:border-gray-700"
+        >
+          Lisans anahtarınız yoksa
+          <a href="https://brytakip.com" target="_blank" class="text-brand underline">brytakip.com</a>
+          adresinden kurumunuzu kaydederek alabilirsiniz.
+        </p>
       </div>
     </section>
 
