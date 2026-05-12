@@ -6,7 +6,6 @@
   <title>BRY Takip — BKDS Anlık Takip</title>
   <meta name="description" content="Özel eğitim merkezleri için BKDS giriş-çıkış canlı takip. MEB ödeneğine uygun otomatik ders hesabı. Veri kurum dışına çıkmaz." />
 
-  <!-- Open Graph -->
   <meta property="og:title" content="BRY Takip — BKDS Anlık Takip" />
   <meta property="og:description" content="BRY'niz cebinizde. Anlık takip, otomatik ders hesabı, KVKK uyumlu yerel ağ tasarımı." />
   <meta property="og:type" content="website" />
@@ -41,18 +40,11 @@
   <style>
     html { scroll-behavior: smooth; }
     body { font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
-    /* Hero subtle gradient */
-    .hero-bg {
-      background: linear-gradient(135deg, #f0fbf6 0%, #ffffff 100%);
-    }
-    /* Phone mockup outer ring */
+    .hero-bg { background: linear-gradient(135deg, #f0fbf6 0%, #ffffff 100%); }
     .phone-frame {
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 12px #1f2937, 0 0 0 14px #374151;
     }
-    /* Animated underline */
-    .nav-link {
-      position: relative;
-    }
+    .nav-link { position: relative; }
     .nav-link::after {
       content: '';
       position: absolute;
@@ -63,507 +55,657 @@
       transition: transform 0.2s ease;
     }
     .nav-link:hover::after { transform: scaleX(1); }
+
+    /* View state — sayfa state'i değişince transitions */
+    [data-view] { display: none; }
+    [data-view].active { display: block; }
+    [data-view].active.flex { display: flex; }
   </style>
 </head>
 <body class="bg-white text-gray-900">
 
-  <!-- ── Top nav ───────────────────────────────────────────── -->
+  <!-- ════════════════════════════════════════════════════════
+       NAV — state'e göre değişen üst menü
+       ════════════════════════════════════════════════════════ -->
   <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
     <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-      <a href="#" class="flex items-center gap-2.5">
+      <a href="#" onclick="setView('landing'); return false;" class="flex items-center gap-2.5">
         <div class="w-9 h-9 rounded-lg bg-brand flex items-center justify-center text-white text-lg font-semibold">↘</div>
         <span class="font-semibold text-gray-900">BRY Takip</span>
       </a>
-      <nav class="hidden md:flex items-center gap-7 text-sm text-gray-700">
+
+      <!-- Anonim nav -->
+      <nav id="navAnonymous" class="hidden md:flex items-center gap-7 text-sm text-gray-700">
         <a href="#ozellikler" class="nav-link">Özellikler</a>
         <a href="#fiyatlandirma" class="nav-link">Fiyatlandırma</a>
         <a href="#sss" class="nav-link">SSS</a>
         <a href="#iletisim" class="nav-link">İletişim</a>
       </nav>
-      <a href="#indir" class="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80 hover:bg-brand-dark transition-colors">
-        İndir
-      </a>
+
+      <!-- Üye nav -->
+      <nav id="navMember" class="hidden md:flex items-center gap-7 text-sm text-gray-700">
+        <a href="#" onclick="setView('panel'); scrollToTop(); return false;" class="nav-link">Hesabım</a>
+      </nav>
+
+      <!-- Sağ aksiyon -->
+      <div class="flex items-center gap-2">
+        <a id="ctaTopAnon" href="#" onclick="setView('signup'); return false;" class="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80 hover:bg-brand-dark transition-colors">
+          Üye Ol
+        </a>
+        <button id="ctaTopMember" type="button" onclick="signOut()" class="hidden px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg active:opacity-80 hover:bg-gray-200 transition-colors">
+          Çıkış
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- ── Hero ──────────────────────────────────────────────── -->
-  <section class="hero-bg">
-    <div class="max-w-6xl mx-auto px-5 py-12 md:py-20 grid md:grid-cols-2 gap-10 items-center">
-      <!-- Left: copy -->
-      <div>
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 text-brand text-xs font-medium mb-5">
-          <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
-          MEB BKDS uyumlu · KVKK güvenli
+  <!-- ════════════════════════════════════════════════════════
+       LANDING VIEW (default)
+       ════════════════════════════════════════════════════════ -->
+  <main data-view="landing" class="active">
+
+    <!-- Hero -->
+    <section class="hero-bg">
+      <div class="max-w-6xl mx-auto px-5 py-12 md:py-20 grid md:grid-cols-2 gap-10 items-center">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 text-brand text-xs font-medium mb-5">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
+            MEB BKDS uyumlu · KVKK güvenli
+          </div>
+          <h1 class="text-4xl md:text-5xl font-semibold text-gray-900 leading-tight mb-4">
+            BRY'niz cebinizde,<br>
+            <span class="text-brand">her an takip</span>.
+          </h1>
+          <p class="text-lg text-gray-600 leading-relaxed mb-7">
+            Özel eğitim merkezleri için INNOVA BKDS giriş-çıkış canlı takip uygulaması.
+            Ders saati otomatik hesaplanır, MEB ödeneğiniz hep doğru.
+            <strong class="text-gray-900">Veri kurum dışına çıkmaz.</strong>
+          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="#" onclick="setView('signup'); return false;" class="px-5 py-3 bg-brand text-white font-medium rounded-xl shadow-sm active:opacity-80 hover:bg-brand-dark transition-colors">
+              Ücretsiz Üye Ol
+            </a>
+            <a href="#iletisim" class="px-5 py-3 text-gray-700 font-medium hover:text-brand transition-colors">
+              Demo İste →
+            </a>
+          </div>
+          <div class="mt-7 flex items-center gap-5 text-xs text-gray-500">
+            <div class="flex items-center gap-1.5"><span class="text-brand">✓</span> Kurulum 2 dakika</div>
+            <div class="flex items-center gap-1.5"><span class="text-brand">✓</span> Mac + Windows</div>
+            <div class="flex items-center gap-1.5"><span class="text-brand">✓</span> Kredi kartı gerekmez</div>
+          </div>
         </div>
-        <h1 class="text-4xl md:text-5xl font-semibold text-gray-900 leading-tight mb-4">
-          BRY'niz cebinizde,<br>
-          <span class="text-brand">her an takip</span>.
-        </h1>
-        <p class="text-lg text-gray-600 leading-relaxed mb-7">
-          Özel eğitim merkezleri için INNOVA BKDS giriş-çıkış canlı takip uygulaması.
-          Ders saati otomatik hesaplanır, MEB ödeneğiniz hep doğru.
-          <strong class="text-gray-900">Veri kurum dışına çıkmaz.</strong>
+
+        <!-- Phone mockup -->
+        <div class="hidden md:flex justify-center">
+          <div class="phone-frame rounded-[2.5rem] bg-white w-[280px] h-[560px] overflow-hidden relative">
+            <div class="h-7 bg-white flex items-center justify-between px-5 text-[10px] text-gray-700 font-medium">
+              <span>14:32</span><span>●●● 🔋</span>
+            </div>
+            <div class="px-4 py-2.5 bg-white border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <div class="text-[8px] text-gray-500 uppercase tracking-wider">Luden Keşif</div>
+                <div class="text-sm font-semibold text-gray-900">Anlık Durum</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                <span class="text-[10px] text-gray-600">Canlı</span>
+              </div>
+            </div>
+            <div class="mx-3 mt-2 p-2 bg-brand text-white rounded-lg flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px]">↘</div>
+              <div class="flex-1">
+                <div class="text-[10px] font-medium">Bülent K. giriş yaptı</div>
+                <div class="text-[9px] opacity-80">14:32</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 px-3 mt-2.5">
+              <div class="bg-gray-100 rounded-lg p-2">
+                <div class="text-[9px] text-gray-600">Bugün toplam</div>
+                <div class="text-lg font-semibold text-gray-900">17</div>
+              </div>
+              <div class="bg-amber-50 rounded-lg p-2">
+                <div class="text-[9px] text-amber-700">Manuel</div>
+                <div class="text-lg font-semibold text-amber-700">2</div>
+              </div>
+            </div>
+            <div class="px-3 mt-3">
+              <div class="inline-flex bg-gray-100 rounded-md p-0.5 text-[9px]">
+                <span class="px-2 py-1 bg-white rounded text-gray-900 font-medium shadow-sm">Hepsi</span>
+                <span class="px-2 py-1 text-gray-500">Birey</span>
+                <span class="px-2 py-1 text-gray-500">Personel</span>
+              </div>
+            </div>
+            <div class="px-3 mt-3 space-y-1.5">
+              <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <div class="w-7 h-7 rounded-full bg-white text-[9px] text-gray-600 flex items-center justify-center">BK</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[10px] font-medium text-gray-900 truncate">BÜL****ARI</div>
+                  <div class="text-[8px] text-gray-600">
+                    <span class="text-brand">↘ 09:15</span> → <span class="text-gray-700">↗ 14:32</span> · 5s 17dk
+                  </div>
+                </div>
+                <span class="text-[8px] px-1.5 py-0.5 bg-green-600 text-white rounded font-semibold">3 DERS</span>
+              </div>
+              <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <div class="w-7 h-7 rounded-full bg-white text-[9px] text-gray-600 flex items-center justify-center">AY</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[10px] font-medium text-gray-900 truncate">AYŞ****LIK</div>
+                  <div class="text-[8px] text-gray-600">
+                    <span class="text-brand">↘ 10:00</span> → <span class="text-gray-700">↗ 11:45</span> · 1s 45dk
+                  </div>
+                </div>
+                <span class="text-[8px] px-1.5 py-0.5 bg-green-500 text-white rounded font-semibold">2 DERS</span>
+              </div>
+              <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <div class="w-7 h-7 rounded-full bg-white text-[9px] text-gray-600 flex items-center justify-center">MR</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[10px] font-medium text-gray-900 truncate">MEH****CAN</div>
+                  <div class="text-[8px] text-gray-600">
+                    <span class="text-brand">↘ 11:20</span> → <span class="text-gray-700">↗ 12:00</span> · 40dk
+                  </div>
+                </div>
+                <span class="text-[8px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-semibold">1 DERS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="bg-gray-900 text-white py-16">
+      <div class="max-w-6xl mx-auto px-5">
+        <div class="text-center mb-12">
+          <p class="text-brand-light text-sm font-medium uppercase tracking-wider mb-2">Sorun</p>
+          <h2 class="text-3xl md:text-4xl font-semibold">
+            MEB BKDS'yi takip etmek <span class="text-gray-400">yorucu olmamalı.</span>
+          </h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="p-6 bg-gray-800 rounded-2xl">
+            <div class="w-10 h-10 rounded-lg bg-red-900/30 text-red-400 flex items-center justify-center text-lg mb-4">⌚</div>
+            <h3 class="font-semibold mb-2">Bilgisayara bağımlısınız</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              INNOVA arayüzü sadece masaüstünden çalışıyor. Veriyi görmek için her seferinde PC'nin başına gitmek zorundasınız.
+            </p>
+          </div>
+          <div class="p-6 bg-gray-800 rounded-2xl">
+            <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-400 flex items-center justify-center text-lg mb-4">∑</div>
+            <h3 class="font-semibold mb-2">Ders hesabı elden</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              MEB ödenek için 40/90/140 dakika eşiklerini her birey için elle hesaplamak yorucu ve hataya açık.
+            </p>
+          </div>
+          <div class="p-6 bg-gray-800 rounded-2xl">
+            <div class="w-10 h-10 rounded-lg bg-blue-900/30 text-blue-400 flex items-center justify-center text-lg mb-4">∅</div>
+            <h3 class="font-semibold mb-2">Anlık bilgi yok</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Yeni bir öğrenci giriş yaptı mı? Kim hâlâ içeride? PC başında olmadan cevap vermek imkansız.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Özellikler -->
+    <section id="ozellikler" class="py-16 md:py-24 bg-white">
+      <div class="max-w-6xl mx-auto px-5">
+        <div class="text-center mb-12">
+          <p class="text-brand text-sm font-medium uppercase tracking-wider mb-2">Çözüm</p>
+          <h2 class="text-3xl md:text-4xl font-semibold text-gray-900">
+            Her şey otomatik, <span class="text-brand">size sadece bakmak</span> kalıyor.
+          </h2>
+        </div>
+        <div class="grid md:grid-cols-2 gap-5">
+          <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">📱</div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Anlık bildirim</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Yeni bir giriş-çıkış olduğunda telefonunuza saniyeler içinde bildirim düşer. Kurum WiFi'sindeyken her yerden takip edebilirsiniz.
+            </p>
+          </div>
+          <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">⏱</div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Otomatik ders hesabı</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              MEB ödenek kurallarına göre (0-39dk → 0 ders, 40-89 → 1, 90-139 → 2, 140+ → 3) ders sayısı otomatik hesaplanır. Tek bakışta görürsünüz.
+            </p>
+          </div>
+          <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">🔒</div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Veriniz size ait</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Tasarım kararı: BKDS verisi kurumun yerel ağından çıkmaz. Apple/Google/AWS sunucularına gönderilmez. KVKK ile uyumlu, veliler için savunulabilir.
+            </p>
+          </div>
+          <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">💻</div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Mac + Windows + Telefon</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Tek kurulum, tüm cihazlar. Bilgisayara kurun, telefonunuzdan WiFi'ye bağlanın, tablet de duvar paneli olsun.
+            </p>
+          </div>
+          <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">⟲</div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Otomatik güncelleme</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Yeni sürüm çıkınca tek tıkla yüklenir. INNOVA bir değişiklik yaparsa biz uyum sağlarız, siz hiçbir şey yapmazsınız.
+            </p>
+          </div>
+          <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">⚙</div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Müdahalesiz</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Bir kez kurun. Bilgisayar açılınca arka planda kendiliğinden başlar. Tray ikonundan kontrol edersiniz. Hayatın akışını bozmaz.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fiyatlandırma -->
+    <section id="fiyatlandirma" class="py-16 md:py-24 bg-gray-50">
+      <div class="max-w-6xl mx-auto px-5">
+        <div class="text-center mb-12">
+          <p class="text-brand text-sm font-medium uppercase tracking-wider mb-2">Fiyatlandırma</p>
+          <h2 class="text-3xl md:text-4xl font-semibold text-gray-900 mb-3">
+            Kurumunuzun ölçeğine göre.
+          </h2>
+          <p class="text-gray-600">Tek bir kurum başına aylık ücret. KDV dahil.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+          <div class="bg-white rounded-2xl p-6 border border-gray-200">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Lite</h3>
+            <div class="text-3xl font-semibold text-gray-900 mb-1">Ücretsiz</div>
+            <p class="text-xs text-gray-500 mb-5">Pilot deneme için</p>
+            <ul class="space-y-2.5 text-sm text-gray-700 mb-6">
+              <li class="flex gap-2"><span class="text-brand">✓</span> Bilgisayardan anlık görüntü</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> Tek telefon eşleştirme</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> Manuel ders hesabı görseli</li>
+              <li class="flex gap-2 text-gray-400"><span>—</span> Bildirim yok</li>
+              <li class="flex gap-2 text-gray-400"><span>—</span> Aylık rapor yok</li>
+            </ul>
+            <a href="#" onclick="setView('signup', 'lite'); return false;" class="block w-full py-2.5 text-center text-brand border border-brand rounded-lg text-sm font-medium hover:bg-brand-50 transition-colors">
+              Ücretsiz Üye Ol
+            </a>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border-2 border-brand relative shadow-lg md:-translate-y-2">
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand text-white text-[10px] font-semibold px-3 py-1 rounded-full">EN POPÜLER</span>
+            <h3 class="text-sm font-semibold text-brand uppercase tracking-wider mb-2">Standart</h3>
+            <div class="text-3xl font-semibold text-gray-900 mb-1">
+              299₺<span class="text-base font-normal text-gray-500">/ay</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-5">Yıllık ödemede 2 ay bedava (2990₺)</p>
+            <ul class="space-y-2.5 text-sm text-gray-700 mb-6">
+              <li class="flex gap-2"><span class="text-brand">✓</span> Lite'taki tüm özellikler</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Anlık bildirim</strong></li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Otomatik ders hesabı</strong></li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> Sınırsız telefon eşleştirme</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> Otomatik güncelleme</li>
+              <li class="flex gap-2 text-gray-400"><span>—</span> Aylık rapor yok</li>
+            </ul>
+            <a href="#" onclick="setView('signup', 'standart'); return false;" class="block w-full py-2.5 text-center bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors">
+              14 Gün Ücretsiz Dene
+            </a>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border border-gray-200">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Pro</h3>
+            <div class="text-3xl font-semibold text-gray-900 mb-1">
+              599₺<span class="text-base font-normal text-gray-500">/ay</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-5">Büyük kurum + raporlama</p>
+            <ul class="space-y-2.5 text-sm text-gray-700 mb-6">
+              <li class="flex gap-2"><span class="text-brand">✓</span> Standart'taki tüm özellikler</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Aylık MEB ders raporu (Excel)</strong></li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Çoklu kullanıcı</strong></li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> Veli paneli</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> Öncelikli WhatsApp destek</li>
+              <li class="flex gap-2"><span class="text-brand">✓</span> 99.9% uptime SLA</li>
+            </ul>
+            <a href="#" onclick="setView('signup', 'pro'); return false;" class="block w-full py-2.5 text-center text-gray-700 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+              Pro İçin Başvur
+            </a>
+          </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-500 mt-8">
+          Tüm planlar tek kurum içindir. Birden fazla şubeniz varsa indirim için
+          <a href="#iletisim" class="text-brand underline">bizimle iletişime geçin</a>.
         </p>
-        <div class="flex flex-wrap items-center gap-3">
-          <a href="#indir" class="px-5 py-3 bg-brand text-white font-medium rounded-xl shadow-sm active:opacity-80 hover:bg-brand-dark transition-colors">
-            Ücretsiz Dene
-          </a>
-          <a href="#iletisim" class="px-5 py-3 text-gray-700 font-medium hover:text-brand transition-colors">
-            Demo İste →
-          </a>
+      </div>
+    </section>
+
+    <!-- SSS -->
+    <section id="sss" class="py-16 md:py-24 bg-white">
+      <div class="max-w-3xl mx-auto px-5">
+        <div class="text-center mb-12">
+          <p class="text-brand text-sm font-medium uppercase tracking-wider mb-2">SSS</p>
+          <h2 class="text-3xl md:text-4xl font-semibold text-gray-900">Sık sorulan sorular.</h2>
         </div>
-        <div class="mt-7 flex items-center gap-5 text-xs text-gray-500">
-          <div class="flex items-center gap-1.5">
-            <span class="text-brand">✓</span> Kurulum 2 dakika
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-brand">✓</span> Mac + Windows
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-brand">✓</span> Kredi kartı gerekmez
-          </div>
+        <div class="space-y-3">
+          <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
+            <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
+              <span>Verilerimiz cloud'a gönderiliyor mu?</span>
+              <span class="text-brand transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+              Hayır. BKDS verisi kurumun yerel ağında kalır. Bildirimler bile yerel ağda — Apple/Google push servisleri kullanılmaz. Sadece <em>lisans kontrolü</em> ve <em>uygulama güncellemesi</em> için internete bağlanılır, bunlarda kişisel veri geçmez.
+            </p>
+          </details>
+          <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
+            <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
+              <span>KVKK uyumlu mu?</span>
+              <span class="text-brand transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+              Evet. Çocukların özel nitelikli verileri (biyometrik foto, sağlık verisi) için lokal mimari kararı verdik — veri kurum dışına çıkmadığı için yurt dışı aktarım sorunu yok.
+            </p>
+          </details>
+          <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
+            <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
+              <span>Telefondan nasıl bağlanırım?</span>
+              <span class="text-brand transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+              Telefonunuzun tarayıcısından bilgisayarın yerel IP adresini açın. 6 haneli eşleştirme kodunu Ayarlar → Cihaz Eşleştirme'den alın, telefonda girin. Bir defalık. iOS'ta "Ana Ekrana Ekle" ile uygulama gibi açabilirsiniz.
+            </p>
+          </details>
+          <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
+            <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
+              <span>INNOVA güncelleme yaparsa uygulamam çalışmaz mı?</span>
+              <span class="text-brand transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+              Adapter mimarimiz değişikliklere hızla uyum sağlar — 1-2 gün içinde güncelleme otomatik gelir, siz hiçbir şey yapmazsınız.
+            </p>
+          </details>
+          <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
+            <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
+              <span>Faturamı nasıl alacağım?</span>
+              <span class="text-brand transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+              Her ödeme sonrası kurumunuzun vergi bilgilerine e-Fatura otomatik kesilir. Lite plan ücretsiz olduğu için fatura yoktur.
+            </p>
+          </details>
         </div>
       </div>
+    </section>
 
-      <!-- Right: phone mockup (SVG-based UI preview) -->
-      <div class="hidden md:flex justify-center">
-        <div class="phone-frame rounded-[2.5rem] bg-white w-[280px] h-[560px] overflow-hidden relative">
-          <!-- Status bar -->
-          <div class="h-7 bg-white flex items-center justify-between px-5 text-[10px] text-gray-700 font-medium">
-            <span>14:32</span>
-            <span>●●● 🔋</span>
+    <!-- İletişim -->
+    <section id="iletisim" class="py-16 bg-gray-50">
+      <div class="max-w-3xl mx-auto px-5 text-center">
+        <h2 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-3">Sorularınız mı var?</h2>
+        <p class="text-gray-600 mb-7">WhatsApp veya e-posta ile ulaşın, aynı gün cevap veriyoruz.</p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <a href="https://wa.me/905XXXXXXXXX" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors">
+            WhatsApp ile yaz
+          </a>
+          <a href="mailto:bilgi@brytakip.com" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 text-gray-800 font-medium rounded-xl hover:bg-gray-50 transition-colors">
+            bilgi@brytakip.com
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ════════════════════════════════════════════════════════
+       SIGNUP VIEW
+       ════════════════════════════════════════════════════════ -->
+  <main data-view="signup" class="min-h-[80vh] flex items-center py-12">
+    <div class="max-w-2xl mx-auto px-5 w-full">
+      <button onclick="setView('landing'); return false;" class="text-sm text-gray-500 hover:text-gray-900 mb-6 inline-flex items-center gap-1">
+        ‹ Geri dön
+      </button>
+
+      <div class="bg-white border border-gray-200 rounded-2xl p-7 shadow-sm">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">
+          Kurumunuzu kaydedin
+        </h1>
+        <p class="text-sm text-gray-600 mb-6 leading-relaxed">
+          Aşağıdaki bilgileri doldurun, lisans kodunuzu e-postanıza gönderelim ve uygulamayı hemen indirin.
+          <strong class="text-gray-900">Bir kerelik</strong>, sonrasında otomatik güncellenir.
+        </p>
+
+        <form id="signupForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Kurum adı</label>
+            <input name="kurum" type="text" required placeholder="Örn. Luden Keşif Özel Eğitim Merkezi"
+                   class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white" />
           </div>
-          <!-- App header -->
-          <div class="px-4 py-2.5 bg-white border-b border-gray-100 flex justify-between items-center">
+          <div class="grid grid-cols-2 gap-3">
             <div>
-              <div class="text-[8px] text-gray-500 uppercase tracking-wider">Luden Keşif</div>
-              <div class="text-sm font-semibold text-gray-900">Anlık Durum</div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Yetkili adı</label>
+              <input name="ad" type="text" required autocomplete="name"
+                     class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white" />
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-              <span class="text-[10px] text-gray-600">Canlı</span>
-            </div>
-          </div>
-          <!-- Live notification banner -->
-          <div class="mx-3 mt-2 p-2 bg-brand text-white rounded-lg flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px]">↘</div>
-            <div class="flex-1">
-              <div class="text-[10px] font-medium">Bülent K. giriş yaptı</div>
-              <div class="text-[9px] opacity-80">14:32</div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Şehir</label>
+              <input name="sehir" type="text" required placeholder="Örn. İzmir"
+                     class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white" />
             </div>
           </div>
-          <!-- Stats cards -->
-          <div class="grid grid-cols-2 gap-2 px-3 mt-2.5">
-            <div class="bg-gray-100 rounded-lg p-2">
-              <div class="text-[9px] text-gray-600">Bugün toplam</div>
-              <div class="text-lg font-semibold text-gray-900">17</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">E-posta</label>
+              <input name="email" type="email" required autocomplete="email"
+                     class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white" />
             </div>
-            <div class="bg-amber-50 rounded-lg p-2">
-              <div class="text-[9px] text-amber-700">Manuel</div>
-              <div class="text-lg font-semibold text-amber-700">2</div>
-            </div>
-          </div>
-          <!-- Filter -->
-          <div class="px-3 mt-3">
-            <div class="inline-flex bg-gray-100 rounded-md p-0.5 text-[9px]">
-              <span class="px-2 py-1 bg-white rounded text-gray-900 font-medium shadow-sm">Hepsi</span>
-              <span class="px-2 py-1 text-gray-500">Birey</span>
-              <span class="px-2 py-1 text-gray-500">Personel</span>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Telefon (WhatsApp)</label>
+              <input name="telefon" type="tel" required placeholder="05XX XXX XX XX" autocomplete="tel"
+                     class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white" />
             </div>
           </div>
-          <!-- Activity list -->
-          <div class="px-3 mt-3 space-y-1.5">
-            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-              <div class="w-7 h-7 rounded-full bg-white text-[9px] text-gray-600 flex items-center justify-center">BK</div>
-              <div class="flex-1 min-w-0">
-                <div class="text-[10px] font-medium text-gray-900 truncate">BÜL****ARI</div>
-                <div class="text-[8px] text-gray-600">
-                  <span class="text-brand">↘ 09:15</span> →
-                  <span class="text-gray-700">↗ 14:32</span> · 5s 17dk
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Plan</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="plan" value="lite" class="peer sr-only" />
+                <div class="px-3 py-3 text-center border border-gray-200 rounded-xl peer-checked:border-brand peer-checked:bg-brand-50 peer-checked:text-brand transition-all">
+                  <div class="font-medium text-sm">Lite</div>
+                  <div class="text-[11px] text-gray-500 peer-checked:text-brand">Ücretsiz</div>
                 </div>
-              </div>
-              <span class="text-[8px] px-1.5 py-0.5 bg-green-600 text-white rounded font-semibold">3 DERS</span>
-            </div>
-            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-              <div class="w-7 h-7 rounded-full bg-white text-[9px] text-gray-600 flex items-center justify-center">AY</div>
-              <div class="flex-1 min-w-0">
-                <div class="text-[10px] font-medium text-gray-900 truncate">AYŞ****LIK</div>
-                <div class="text-[8px] text-gray-600">
-                  <span class="text-brand">↘ 10:00</span> →
-                  <span class="text-gray-700">↗ 11:45</span> · 1s 45dk
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="plan" value="standart" class="peer sr-only" checked />
+                <div class="px-3 py-3 text-center border border-gray-200 rounded-xl peer-checked:border-brand peer-checked:bg-brand-50 peer-checked:text-brand transition-all">
+                  <div class="font-medium text-sm">Standart</div>
+                  <div class="text-[11px] text-gray-500 peer-checked:text-brand">299₺/ay</div>
                 </div>
-              </div>
-              <span class="text-[8px] px-1.5 py-0.5 bg-green-500 text-white rounded font-semibold">2 DERS</span>
-            </div>
-            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-              <div class="w-7 h-7 rounded-full bg-white text-[9px] text-gray-600 flex items-center justify-center">MR</div>
-              <div class="flex-1 min-w-0">
-                <div class="text-[10px] font-medium text-gray-900 truncate">MEH****CAN</div>
-                <div class="text-[8px] text-gray-600">
-                  <span class="text-brand">↘ 11:20</span> →
-                  <span class="text-gray-700">↗ 12:00</span> · 40dk
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="plan" value="pro" class="peer sr-only" />
+                <div class="px-3 py-3 text-center border border-gray-200 rounded-xl peer-checked:border-brand peer-checked:bg-brand-50 peer-checked:text-brand transition-all">
+                  <div class="font-medium text-sm">Pro</div>
+                  <div class="text-[11px] text-gray-500 peer-checked:text-brand">599₺/ay</div>
                 </div>
-              </div>
-              <span class="text-[8px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-semibold">1 DERS</span>
+              </label>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ── Problem ──────────────────────────────────────────── -->
-  <section class="bg-gray-900 text-white py-16">
-    <div class="max-w-6xl mx-auto px-5">
-      <div class="text-center mb-12">
-        <p class="text-brand-light text-sm font-medium uppercase tracking-wider mb-2">Sorun</p>
-        <h2 class="text-3xl md:text-4xl font-semibold">
-          MEB BKDS'yi takip etmek <span class="text-gray-400">yorucu olmamalı.</span>
-        </h2>
-      </div>
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="p-6 bg-gray-800 rounded-2xl">
-          <div class="w-10 h-10 rounded-lg bg-red-900/30 text-red-400 flex items-center justify-center text-lg mb-4">⌚</div>
-          <h3 class="font-semibold mb-2">Bilgisayara bağımlısınız</h3>
-          <p class="text-sm text-gray-400 leading-relaxed">
-            INNOVA arayüzü sadece masaüstünden çalışıyor. Veriyi görmek için her seferinde
-            PC'nin başına gitmek zorundasınız.
-          </p>
-        </div>
-        <div class="p-6 bg-gray-800 rounded-2xl">
-          <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-400 flex items-center justify-center text-lg mb-4">∑</div>
-          <h3 class="font-semibold mb-2">Ders hesabı elden</h3>
-          <p class="text-sm text-gray-400 leading-relaxed">
-            MEB ödenek için 40/90/140 dakika eşiklerini her birey için elle hesaplamak
-            yorucu ve hataya açık.
-          </p>
-        </div>
-        <div class="p-6 bg-gray-800 rounded-2xl">
-          <div class="w-10 h-10 rounded-lg bg-blue-900/30 text-blue-400 flex items-center justify-center text-lg mb-4">∅</div>
-          <h3 class="font-semibold mb-2">Anlık bilgi yok</h3>
-          <p class="text-sm text-gray-400 leading-relaxed">
-            Yeni bir öğrenci giriş yaptı mı? Kim hâlâ içeride? PC başında olmadan
-            cevap vermek imkansız.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" name="kvkk" required class="mt-1" />
+            <span class="text-[11px] text-gray-600 leading-relaxed">
+              <a href="/kvkk.html" target="_blank" class="text-brand underline">KVKK aydınlatma metnini</a>
+              ve
+              <a href="/kosullar.html" target="_blank" class="text-brand underline">kullanım koşullarını</a>
+              okudum, kabul ediyorum.
+            </span>
+          </label>
 
-  <!-- ── Özellikler ───────────────────────────────────────── -->
-  <section id="ozellikler" class="py-16 md:py-24 bg-white">
-    <div class="max-w-6xl mx-auto px-5">
-      <div class="text-center mb-12">
-        <p class="text-brand text-sm font-medium uppercase tracking-wider mb-2">Çözüm</p>
-        <h2 class="text-3xl md:text-4xl font-semibold text-gray-900">
-          Her şey otomatik, <span class="text-brand">size sadece bakmak</span> kalıyor.
-        </h2>
-      </div>
-      <div class="grid md:grid-cols-2 gap-5">
-        <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">📱</div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Anlık bildirim</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Yeni bir giriş-çıkış olduğunda telefonunuza saniyeler içinde bildirim düşer.
-            Kurum WiFi'sindeyken her yerden takip edebilirsiniz.
-          </p>
-        </div>
+          <button type="submit" id="signupSubmit"
+                  class="w-full px-4 py-3 bg-brand text-white text-sm font-medium rounded-xl hover:bg-brand-dark transition-colors disabled:opacity-50">
+            Kayıt ol ve uygulamayı al
+          </button>
 
-        <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">⏱</div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Otomatik ders hesabı</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            MEB ödenek kurallarına göre (0-39dk → 0 ders, 40-89 → 1, 90-139 → 2, 140+ → 3)
-            ders sayısı otomatik hesaplanır. Tek bakışta görürsünüz.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">🔒</div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Veriniz size ait</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Tasarım kararı: BKDS verisi kurumun yerel ağından çıkmaz. Apple/Google/AWS
-            sunucularına gönderilmez. KVKK ile uyumlu, veliler için savunulabilir.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">💻</div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Mac + Windows + Telefon</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Tek kurulum, tüm cihazlar. Bilgisayara kurun, telefonunuzdan WiFi'ye bağlanın,
-            tablet de duvar paneli olsun.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">⟲</div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Otomatik güncelleme</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Yeni sürüm çıkınca tek tıkla yüklenir. INNOVA bir değişiklik yaparsa
-            biz uyum sağlarız, siz hiçbir şey yapmazsınız.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center text-xl mb-4">⚙</div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-1.5">Müdahalesiz</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Bir kez kurun. Bilgisayar açılınca arka planda kendiliğinden başlar.
-            Tray ikonundan kontrol edersiniz. Hayatın akışını bozmaz.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Fiyatlandırma ────────────────────────────────────── -->
-  <section id="fiyatlandirma" class="py-16 md:py-24 bg-gray-50">
-    <div class="max-w-6xl mx-auto px-5">
-      <div class="text-center mb-12">
-        <p class="text-brand text-sm font-medium uppercase tracking-wider mb-2">Fiyatlandırma</p>
-        <h2 class="text-3xl md:text-4xl font-semibold text-gray-900 mb-3">
-          Kurumunuzun ölçeğine göre.
-        </h2>
-        <p class="text-gray-600">Tek bir kurum başına aylık ücret. KDV dahil.</p>
+          <p id="signupError" class="hidden text-xs text-red-700 bg-red-50 rounded-lg p-2"></p>
+        </form>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-        <!-- Lite -->
-        <div class="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Lite</h3>
-          <div class="text-3xl font-semibold text-gray-900 mb-1">Ücretsiz</div>
-          <p class="text-xs text-gray-500 mb-5">Pilot deneme için</p>
-          <ul class="space-y-2.5 text-sm text-gray-700 mb-6">
-            <li class="flex gap-2"><span class="text-brand">✓</span> Bilgisayardan anlık görüntü</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> Tek telefon eşleştirme</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> Manuel ders hesabı görseli</li>
-            <li class="flex gap-2 text-gray-400"><span>—</span> Bildirim yok</li>
-            <li class="flex gap-2 text-gray-400"><span>—</span> Aylık rapor yok</li>
-          </ul>
-          <a href="#indir" class="block w-full py-2.5 text-center text-brand border border-brand rounded-lg text-sm font-medium hover:bg-brand-50 transition-colors">
-            Ücretsiz İndir
-          </a>
-        </div>
-
-        <!-- Standart (recommended) -->
-        <div class="bg-white rounded-2xl p-6 border-2 border-brand relative shadow-lg md:-translate-y-2">
-          <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand text-white text-[10px] font-semibold px-3 py-1 rounded-full">EN POPÜLER</span>
-          <h3 class="text-sm font-semibold text-brand uppercase tracking-wider mb-2">Standart</h3>
-          <div class="text-3xl font-semibold text-gray-900 mb-1">
-            299₺<span class="text-base font-normal text-gray-500">/ay</span>
-          </div>
-          <p class="text-xs text-gray-500 mb-5">Yıllık ödemede 2 ay bedava (2990₺)</p>
-          <ul class="space-y-2.5 text-sm text-gray-700 mb-6">
-            <li class="flex gap-2"><span class="text-brand">✓</span> Lite'taki tüm özellikler</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Anlık bildirim</strong></li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Otomatik ders hesabı</strong></li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> Sınırsız telefon eşleştirme</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> Otomatik güncelleme</li>
-            <li class="flex gap-2 text-gray-400"><span>—</span> Aylık rapor yok</li>
-          </ul>
-          <a href="#indir" class="block w-full py-2.5 text-center bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors">
-            14 Gün Ücretsiz Dene
-          </a>
-        </div>
-
-        <!-- Pro -->
-        <div class="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Pro</h3>
-          <div class="text-3xl font-semibold text-gray-900 mb-1">
-            599₺<span class="text-base font-normal text-gray-500">/ay</span>
-          </div>
-          <p class="text-xs text-gray-500 mb-5">Büyük kurum + raporlama</p>
-          <ul class="space-y-2.5 text-sm text-gray-700 mb-6">
-            <li class="flex gap-2"><span class="text-brand">✓</span> Standart'taki tüm özellikler</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Aylık MEB ders raporu (Excel)</strong></li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> <strong>Çoklu kullanıcı</strong> (yönetici/öğretmen/muhasebe)</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> Veli paneli</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> Öncelikli WhatsApp destek</li>
-            <li class="flex gap-2"><span class="text-brand">✓</span> 99.9% uptime SLA</li>
-          </ul>
-          <a href="#iletisim" class="block w-full py-2.5 text-center text-gray-700 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            İletişime Geç
-          </a>
-        </div>
-      </div>
-
-      <p class="text-center text-xs text-gray-500 mt-8">
-        Tüm planlar tek kurum içindir. Birden fazla şubeniz varsa indirim için
-        <a href="#iletisim" class="text-brand underline">bizimle iletişime geçin</a>.
+      <p class="text-center text-[11px] text-gray-500 mt-5">
+        Hesabınız var mı? <a href="#" onclick="showLoginPrompt(); return false;" class="text-brand underline">Lisans kodunuzu girin</a>
       </p>
     </div>
-  </section>
+  </main>
 
-  <!-- ── İndir ────────────────────────────────────────────── -->
-  <section id="indir" class="py-16 md:py-20 bg-brand text-white">
-    <div class="max-w-3xl mx-auto px-5 text-center">
-      <h2 class="text-3xl md:text-4xl font-semibold mb-4">
-        Hemen indirin, 2 dakikada kurun.
-      </h2>
-      <p class="text-white/85 text-lg mb-8 leading-relaxed">
-        Lite sürümü ücretsiz, kart bilgisi gerektirmez. Standart için 14 gün
-        deneme süresi.
-      </p>
-      <div class="flex flex-wrap items-center justify-center gap-3">
-        <a href="https://github.com/recepkucuk1/luden-bkds/releases/latest" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-3 bg-white text-brand font-medium rounded-xl hover:opacity-90 transition-opacity">
-          <span class="text-xl"></span>
-          <div class="text-left">
-            <div class="text-[10px] opacity-70 uppercase tracking-wider">Mac için</div>
-            <div class="text-sm">.dmg indir</div>
+  <!-- ════════════════════════════════════════════════════════
+       PANEL VIEW — kayıtlı kullanıcı dashboard'u
+       ════════════════════════════════════════════════════════ -->
+  <main data-view="panel" class="py-12 md:py-16">
+    <div class="max-w-5xl mx-auto px-5">
+      <!-- Hoşgeldin başlık -->
+      <div class="mb-8">
+        <p class="text-brand text-sm font-medium uppercase tracking-wider mb-1">Hesabım</p>
+        <h1 class="text-3xl md:text-4xl font-semibold text-gray-900">
+          Hoş geldiniz, <span id="panelKurumName">—</span>
+        </h1>
+        <p class="text-gray-600 mt-2" id="panelStatusMsg">
+          Kayıt başarılı. Birkaç saat içinde size lisans kodunuz e-posta ile gönderilecek.
+        </p>
+      </div>
+
+      <!-- 3 kartlık grid -->
+      <div class="grid md:grid-cols-3 gap-5">
+        <!-- Hesap bilgileri -->
+        <div class="bg-gray-50 rounded-2xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-white text-brand flex items-center justify-center font-medium">●</div>
+            <h3 class="font-semibold text-gray-900">Hesap Bilgileri</h3>
           </div>
-        </a>
-        <a href="https://github.com/recepkucuk1/luden-bkds/releases/latest" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-3 bg-white text-brand font-medium rounded-xl hover:opacity-90 transition-opacity">
-          <span class="text-xl">⊞</span>
-          <div class="text-left">
-            <div class="text-[10px] opacity-70 uppercase tracking-wider">Windows için</div>
-            <div class="text-sm">.exe indir</div>
+          <dl class="space-y-2 text-xs">
+            <div class="flex justify-between gap-2">
+              <dt class="text-gray-500">Kurum</dt>
+              <dd class="text-gray-900 font-medium text-right truncate" id="panelKurum">—</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-gray-500">Yetkili</dt>
+              <dd class="text-gray-900 font-medium" id="panelAd">—</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-gray-500">E-posta</dt>
+              <dd class="text-gray-900 font-medium text-right truncate" id="panelEmail">—</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-gray-500">Plan</dt>
+              <dd id="panelPlan" class="font-medium text-brand">—</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Lisans durumu -->
+        <div class="bg-gray-50 rounded-2xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-white text-amber-600 flex items-center justify-center font-medium">⏳</div>
+            <h3 class="font-semibold text-gray-900">Lisans Durumu</h3>
           </div>
-        </a>
+          <div class="space-y-3">
+            <div class="px-3 py-2 bg-amber-50 text-amber-800 text-xs rounded-lg leading-relaxed" id="licenseStatusBox">
+              <p class="font-medium mb-0.5">Manuel onay bekleniyor</p>
+              <p>Pilot dönemde lisans kodları manuel olarak gönderilmektedir. WhatsApp veya e-posta ile geri dönüş yapacağız.</p>
+            </div>
+            <div>
+              <p class="text-[11px] text-gray-500 mb-1">Lisans kodu</p>
+              <code class="block px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-mono text-gray-400">
+                Henüz gönderilmedi
+              </code>
+            </div>
+            <a href="https://wa.me/905XXXXXXXXX" target="_blank" rel="noopener"
+               class="block w-full py-2 text-center text-xs bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+              WhatsApp'tan bizimle iletişime geç
+            </a>
+          </div>
+        </div>
+
+        <!-- İndir -->
+        <div class="bg-brand text-white rounded-2xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-medium">⬇</div>
+            <h3 class="font-semibold">Uygulamayı İndir</h3>
+          </div>
+          <p class="text-xs text-white/85 leading-relaxed mb-4">
+            Mac veya Windows için. Kurulum 2 dakika, kurulum sonrası setup wizard sizi karşılar.
+          </p>
+          <div class="space-y-2">
+            <a href="https://github.com/recepkucuk1/luden-bkds/releases/latest" target="_blank" rel="noopener"
+               class="flex items-center justify-between gap-2 px-3 py-2 bg-white text-brand font-medium rounded-lg hover:opacity-90 transition-opacity">
+              <span class="text-sm">macOS (.dmg)</span>
+              <span class="text-xs"></span>
+            </a>
+            <a href="https://github.com/recepkucuk1/luden-bkds/releases/latest" target="_blank" rel="noopener"
+               class="flex items-center justify-between gap-2 px-3 py-2 bg-white text-brand font-medium rounded-lg hover:opacity-90 transition-opacity">
+              <span class="text-sm">Windows (.exe)</span>
+              <span class="text-xs">⊞</span>
+            </a>
+          </div>
+        </div>
       </div>
-      <p class="text-[11px] text-white/70 mt-6">
-        Gereksinimler: macOS 12+ veya Windows 10+ · INNOVA BRY ile aynı yerel ağ
-      </p>
-    </div>
-  </section>
 
-  <!-- ── SSS ──────────────────────────────────────────────── -->
-  <section id="sss" class="py-16 md:py-24 bg-white">
-    <div class="max-w-3xl mx-auto px-5">
-      <div class="text-center mb-12">
-        <p class="text-brand text-sm font-medium uppercase tracking-wider mb-2">SSS</p>
-        <h2 class="text-3xl md:text-4xl font-semibold text-gray-900">
-          Sık sorulan sorular.
-        </h2>
+      <!-- Ödeme bölümü -->
+      <div class="mt-8 bg-white border border-gray-200 rounded-2xl p-6">
+        <div class="flex items-start justify-between gap-4 mb-5">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900">Ödeme</h2>
+            <p class="text-sm text-gray-600 mt-1">Plan ücretinizi aşağıdan seçtiğiniz yöntemle ödeyebilirsiniz.</p>
+          </div>
+          <span id="planBadge" class="px-3 py-1 bg-brand-50 text-brand text-xs font-medium rounded-full self-start">Standart 299₺/ay</span>
+        </div>
+
+        <!-- Ödeme yöntemleri -->
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="border border-gray-200 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-base">🏦</div>
+              <h4 class="font-medium text-gray-900 text-sm">Havale / EFT</h4>
+            </div>
+            <p class="text-[11px] text-gray-600 leading-relaxed mb-3">
+              Banka hesabımıza havale yapın, dekontu WhatsApp'tan iletin. Aynı gün lisans kodunuzu alın.
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 text-[11px] space-y-1">
+              <div class="flex justify-between"><span class="text-gray-500">Hesap sahibi</span> <span class="font-medium">LudenLab</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">Banka</span> <span class="font-medium">—</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">IBAN</span> <span class="font-mono">TR00 0000 0000 0000 0000 0000 00</span></div>
+            </div>
+          </div>
+
+          <div class="border border-gray-200 rounded-xl p-4 relative opacity-60">
+            <span class="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full">Yakında</span>
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center text-base">💳</div>
+              <h4 class="font-medium text-gray-900 text-sm">Kredi Kartı (iyzico)</h4>
+            </div>
+            <p class="text-[11px] text-gray-600 leading-relaxed mb-3">
+              Otomatik aylık tahsilat. e-Fatura otomatik kesilir. Yakında aktif.
+            </p>
+            <button disabled class="w-full py-2 bg-gray-100 text-gray-400 text-xs rounded-lg cursor-not-allowed">
+              Şimdilik kullanılamıyor
+            </button>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-gray-500 mt-4 leading-relaxed">
+          Lite plana kayıtlıysanız ödeme gerekmez — uygulamayı doğrudan indirebilirsiniz.
+          Plan değiştirmek için <a href="https://wa.me/905XXXXXXXXX" target="_blank" rel="noopener" class="text-brand underline">WhatsApp</a> ile bizimle iletişime geçin.
+        </p>
       </div>
 
-      <div class="space-y-3">
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>Verilerimiz cloud'a gönderiliyor mu?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Hayır. BKDS verisi (isimler, fotoğraflar, giriş-çıkış zamanları) kurumun
-            yerel ağında kalır. Bildirimler bile yerel ağda — Apple/Google push servisleri
-            kullanılmaz. Sadece <em>lisans kontrolü</em> ve <em>uygulama güncellemesi</em>
-            için internete bağlanılır, bunlarda kişisel veri geçmez.
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>KVKK uyumlu mu?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Evet. Çocukların özel nitelikli verilerini işlediğimizin farkındayız —
-            biyometrik fotoğraflar, sağlık verisi (engel kodu), kimlik bilgileri.
-            Lokal mimari kararımızın temel nedeni KVKK uyumluluğu. Veri kurum dışına
-            çıkmadığı için yurt dışı aktarım sorunu yok. Detaylı bilgi
-            <a href="https://github.com/recepkucuk1/luden-bkds/blob/main/LEGAL_AND_KVKK.md" class="text-brand underline" target="_blank">LEGAL_AND_KVKK.md</a>
-            dökümanımızda.
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>Telefondan nasıl bağlanırım?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Telefonunuzun tarayıcısından bilgisayarın yerel IP adresini açın (uygulama
-            size söyler). 6 haneli eşleştirme kodunu Ayarlar → Cihaz Eşleştirme'den
-            alın, telefonda girin. Bir defalık. iOS'ta sayfayı "Ana Ekrana Ekle" ile
-            uygulama gibi açabilirsiniz.
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>INNOVA güncelleme yaparsa uygulamam çalışmaz mı?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            INNOVA BRY API'sine bağlanan modülümüz <em>adapter pattern</em> ile yazıldı —
-            INNOVA değişiklik yaparsa biz 1-2 gün içinde uygulamayı güncelliyoruz,
-            otomatik güncelleme ile size de geliyor. Siz hiçbir şey yapmıyorsunuz.
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>iPhone'da çalışır mı?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Evet. Telefonunuzun Safari'sinden uygulamayı açıp "Ana Ekrana Ekle" diyerek
-            PWA olarak kullanırsınız. Hisseti gerçek uygulama gibi. Tek kısıt: iPhone
-            kilit ekranı bildirimleri için telefonun aynı kurum WiFi'sinde olması gerekiyor
-            (Apple kısıtlaması — HTTPS isteyen feature için).
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>Bilgisayar kapanırsa ne olur?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Bilgisayar açık olmalı — backend (BRY ile konuşan modül) bilgisayarda çalışıyor.
-            Otomatik başlatma açık olduğunda Mac/PC restart sonrası uygulama kendiliğinden
-            başlar, tray ikonundan görünür, telefonlar bağlanabilir. Mac'i tamamen
-            kapatırsanız (Cmd+Q + power off) takip durur, açılınca devam eder.
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>Birden fazla şubem var, indirim alabilir miyim?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Evet. 2+ kurum kullanımında yıllık ödeme indirim oranlarımız var.
-            <a href="#iletisim" class="text-brand underline">İletişime geçin</a>,
-            kurumunuza özel fiyat verelim.
-          </p>
-        </details>
-
-        <details class="group bg-gray-50 rounded-xl p-5 cursor-pointer">
-          <summary class="flex items-center justify-between font-medium text-gray-900 list-none">
-            <span>Faturamı nasıl alacağım?</span>
-            <span class="text-brand transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
-            Her ödeme sonrası kurumunuzun vergi bilgilerine e-Fatura otomatik kesilir.
-            Lite plan ücretsiz olduğu için fatura yoktur.
-          </p>
-        </details>
+      <!-- İletişim -->
+      <div class="mt-6 text-center text-xs text-gray-500">
+        Sorularınız için
+        <a href="mailto:bilgi@brytakip.com" class="text-brand underline">bilgi@brytakip.com</a>
+        veya
+        <a href="https://wa.me/905XXXXXXXXX" target="_blank" rel="noopener" class="text-brand underline">WhatsApp</a>.
       </div>
     </div>
-  </section>
+  </main>
 
-  <!-- ── İletişim ─────────────────────────────────────────── -->
-  <section id="iletisim" class="py-16 bg-gray-50">
-    <div class="max-w-3xl mx-auto px-5 text-center">
-      <h2 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-3">
-        Sorularınız mı var?
-      </h2>
-      <p class="text-gray-600 mb-7">
-        WhatsApp veya e-posta ile ulaşın, aynı gün cevap veriyoruz.
-      </p>
-      <div class="flex flex-wrap justify-center gap-3">
-        <a href="https://wa.me/905XXXXXXXXX" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors">
-          WhatsApp ile yaz
-        </a>
-        <a href="mailto:bilgi@brytakip.com" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 text-gray-800 font-medium rounded-xl hover:bg-gray-50 transition-colors">
-          bilgi@brytakip.com
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Footer ───────────────────────────────────────────── -->
+  <!-- ════════════════════════════════════════════════════════
+       FOOTER (her view'de görünür)
+       ════════════════════════════════════════════════════════ -->
   <footer class="bg-gray-900 text-gray-400 py-12">
     <div class="max-w-6xl mx-auto px-5">
       <div class="grid md:grid-cols-4 gap-8 mb-10">
@@ -573,8 +715,7 @@
             <span class="font-semibold text-white">BRY Takip</span>
           </div>
           <p class="text-sm leading-relaxed mb-4 max-w-md">
-            Özel eğitim merkezleri için INNOVA BKDS canlı takip uygulaması.
-            Veri kurum dışına çıkmaz tasarımıyla KVKK uyumlu.
+            Özel eğitim merkezleri için INNOVA BKDS canlı takip uygulaması. Veri kurum dışına çıkmaz tasarımıyla KVKK uyumlu.
           </p>
           <p class="text-xs">© 2026 LudenLab. Tüm hakları saklıdır.</p>
         </div>
@@ -583,8 +724,8 @@
           <ul class="space-y-2 text-sm">
             <li><a href="#ozellikler" class="hover:text-white">Özellikler</a></li>
             <li><a href="#fiyatlandirma" class="hover:text-white">Fiyatlandırma</a></li>
-            <li><a href="#indir" class="hover:text-white">İndir</a></li>
             <li><a href="#sss" class="hover:text-white">SSS</a></li>
+            <li><a href="#" onclick="setView('signup'); return false;" class="hover:text-white">Üye Ol</a></li>
           </ul>
         </div>
         <div>
@@ -598,13 +739,159 @@
         </div>
       </div>
       <div class="pt-6 border-t border-gray-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <p>BRY Takip, INNOVA BRY sistemine yönelik bağımsız bir araçtır. INNOVA ile ortaklığı yoktur.</p>
-        <a href="https://github.com/recepkucuk1/luden-bkds" target="_blank" rel="noopener" class="hover:text-white">
-          Açık geliştirme ↗
-        </a>
+        <p>BRY Takip, INNOVA BRY sistemine yönelik bağımsız bir araçtır.</p>
+        <a href="https://github.com/recepkucuk1/luden-bkds" target="_blank" rel="noopener" class="hover:text-white">Açık geliştirme ↗</a>
       </div>
     </div>
   </footer>
+
+  <!-- ════════════════════════════════════════════════════════
+       JS — view state + form submit + localStorage
+       ════════════════════════════════════════════════════════ -->
+  <script>
+    // ────── Storage ──────
+    const STORAGE_KEY = 'brytakip-user';
+
+    function getUser() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
+      } catch { return null; }
+    }
+    function setUser(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+    function clearUser() {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    // ────── View routing ──────
+    function setView(name, planPreselect) {
+      // Hide all views, show target
+      document.querySelectorAll('[data-view]').forEach((el) => {
+        el.classList.remove('active');
+      });
+      const target = document.querySelector(`[data-view="${name}"]`);
+      if (target) target.classList.add('active');
+
+      // Sync nav based on auth state
+      const user = getUser();
+      const isLogged = !!user;
+      document.getElementById('navAnonymous').classList.toggle('hidden', isLogged);
+      document.getElementById('navMember').classList.toggle('hidden', !isLogged);
+      document.getElementById('ctaTopAnon').classList.toggle('hidden', isLogged);
+      document.getElementById('ctaTopMember').classList.toggle('hidden', !isLogged);
+
+      // Plan pre-selection on signup
+      if (name === 'signup' && planPreselect) {
+        setTimeout(() => {
+          const r = document.querySelector(`input[name="plan"][value="${planPreselect}"]`);
+          if (r) r.checked = true;
+        }, 50);
+      }
+
+      // Populate panel if showing
+      if (name === 'panel' && user) {
+        populatePanel(user);
+      }
+
+      // Scroll up on view change
+      scrollToTop();
+
+      // URL hash for shareability + back button
+      if (name === 'landing') {
+        history.replaceState(null, '', window.location.pathname);
+      } else {
+        history.replaceState(null, '', '#/' + name);
+      }
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // ────── Panel populate ──────
+    function populatePanel(user) {
+      const planLabel = { lite: 'Lite (Ücretsiz)', standart: 'Standart (299₺/ay)', pro: 'Pro (599₺/ay)' };
+      document.getElementById('panelKurumName').textContent = user.kurum || '—';
+      document.getElementById('panelKurum').textContent = user.kurum || '—';
+      document.getElementById('panelAd').textContent = user.ad || '—';
+      document.getElementById('panelEmail').textContent = user.email || '—';
+      document.getElementById('panelPlan').textContent = planLabel[user.plan] || user.plan;
+      document.getElementById('planBadge').textContent = planLabel[user.plan] || '—';
+
+      // Lite plan ödeme kutusunu sakla
+      const isLite = user.plan === 'lite';
+      const paymentSection = document.querySelector('[data-view="panel"] .bg-white.border.border-gray-200.rounded-2xl');
+      if (paymentSection) {
+        paymentSection.style.display = isLite ? 'none' : '';
+      }
+    }
+
+    // ────── Signup ──────
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('signupSubmit');
+      const err = document.getElementById('signupError');
+      err.classList.add('hidden');
+
+      const formData = new FormData(e.target);
+      const payload = {
+        kurum: formData.get('kurum'),
+        ad: formData.get('ad'),
+        sehir: formData.get('sehir'),
+        email: formData.get('email'),
+        telefon: formData.get('telefon'),
+        plan: formData.get('plan'),
+        createdAt: new Date().toISOString(),
+      };
+
+      btn.disabled = true;
+      btn.textContent = 'Kaydediliyor...';
+
+      // TODO: Gerçek bir endpoint'e POST atılacak (Hostinger PHP mail veya
+      // Cloudflare Worker veya Formspree). Şu an sadece local'e kaydediyoruz
+      // — Recep manuel takip için backend'i kurana kadar leadlar PWA local'inde
+      // gözüküyor. Production'da:
+      //   await fetch('/api/signup', { method: 'POST', body: JSON.stringify(payload) });
+      try {
+        await new Promise((r) => setTimeout(r, 800)); // simüle network
+        setUser(payload);
+        setView('panel');
+      } catch (e) {
+        err.textContent = 'Bir hata oluştu, lütfen tekrar deneyin veya WhatsApp\'tan iletişime geçin.';
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kayıt ol ve uygulamayı al';
+      }
+    });
+
+    // ────── Sign out ──────
+    function signOut() {
+      if (!confirm('Çıkış yapılsın mı? Bu cihazdaki kayıt bilgileri silinir.')) return;
+      clearUser();
+      setView('landing');
+    }
+
+    // ────── Login (lisans kodu) — yer tutucu ──────
+    function showLoginPrompt() {
+      alert('Mevcut lisans kodunuzla giriş özelliği yakında. Şimdilik WhatsApp ile iletişime geçin.');
+    }
+
+    // ────── İlk yükleme ──────
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = getUser();
+      const hash = window.location.hash.replace('#/', '');
+
+      if (user) {
+        // Üye varsa panel'e git (hash'ten override edilebilir)
+        setView(hash || 'panel');
+      } else {
+        // Üye yoksa landing veya signup (eğer hash öyle diyorsa)
+        setView(hash === 'signup' ? 'signup' : 'landing');
+      }
+    });
+  </script>
 
 </body>
 </html>
