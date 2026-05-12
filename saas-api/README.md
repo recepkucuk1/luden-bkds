@@ -30,10 +30,21 @@ saas-api/
 └── .env.example
 ```
 
-## Recep'in hPanel'de yapacakları (~20 dk)
+## Recep'in hPanel'de yapacakları (~25 dk)
 
-Aşağıdaki 1-4 adımları **Recep yapacak** (hPanel UI clicks).
-Adım 5-10'u Claude (Bash agent) SSH ile yapacak.
+Aşağıdaki 0-5 adımları **Recep yapacak** (hPanel UI clicks).
+Adım 6+'ı Claude (Bash agent) SSH ile yapacak.
+
+### 0. Önce: brytakip.com'u hosting'e ekle (KRİTİK İLK ADIM)
+
+Hostinger akışı: domain hosting plan'ına eklenmeden MySQL/Subdomain/Node.js
+seçenekleri görünmez. Bu adımı atlama.
+
+1. hPanel → **Websites** → **Add Website** (veya "Create or migrate a website")
+2. "Use an existing domain" seç → `brytakip.com`'u listeden seç
+3. "Blank website" / "Manual setup" → template istemiyoruz, kendi HTML'imiz olacak
+4. Continue → ~30 sn beklersin, `domains/brytakip.com/public_html/` oluşur
+5. **Websites** sayfasına dön → `brytakip.com` kartı tıkla → bu Dashboard'undan tüm alt menüler (DB/Subdomain/Node) erişilir
 
 ### 1. MySQL veritabanı oluştur
 
