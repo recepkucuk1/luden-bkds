@@ -41,6 +41,16 @@ if (!repo) {
 
 const releaseUrlBase = `https://github.com/${repo}/releases/download/${tagRef}`;
 
+/**
+ * GitHub release asset adlarında boşlukları noktaya çevirir (GitHub UI/CDN
+ * davranışını taklit). Disk'teki dosya adı "BRY Takip.app.tar.gz" iken
+ * release URL'inde "BRY.Takip.app.tar.gz" oluyor. Manifest URL'sinin
+ * gerçek asset URL'siyle eşleşmesi için aynı dönüşümü uyguluyoruz.
+ */
+function ghAssetName(filename) {
+  return filename.replace(/ /g, '.');
+}
+
 /** Recursive — dir altındaki tüm dosyaları (alt klasörler dahil) düz liste döndürür. */
 function walkFiles(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -63,7 +73,7 @@ const macSig = macFiles.find((f) => f.endsWith('.app.tar.gz.sig'));
 if (macTarGz && macSig) {
   platforms['darwin-aarch64'] = {
     signature: fs.readFileSync(macSig, 'utf8').trim(),
-    url: `${releaseUrlBase}/${encodeURIComponent(path.basename(macTarGz))}`,
+    url: `${releaseUrlBase}/${encodeURIComponent(ghAssetName(path.basename(macTarGz)))}`,
   };
 } else if (macFiles.length > 0) {
   console.error(
@@ -79,7 +89,7 @@ const winSig = winFiles.find((f) => f.endsWith('-setup.exe.sig'));
 if (winExe && winSig) {
   platforms['windows-x86_64'] = {
     signature: fs.readFileSync(winSig, 'utf8').trim(),
-    url: `${releaseUrlBase}/${encodeURIComponent(path.basename(winExe))}`,
+    url: `${releaseUrlBase}/${encodeURIComponent(ghAssetName(path.basename(winExe)))}`,
   };
 } else if (winFiles.length > 0) {
   console.error(
