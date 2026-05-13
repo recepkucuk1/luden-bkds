@@ -3,6 +3,7 @@ const { snapshot, loading, error, fetchSnapshot, connectWs, disconnectWs } = use
 const { relative } = useFormatters();
 const { autoCheckOnStartup } = useUpdater();
 const license = useLicense();
+const auth = useAuth();
 
 // Tüm akordeonların paylaştığı reactive "şu an" — her dakika tik atar
 // İçerideyken süre canlı sayar
@@ -19,10 +20,13 @@ onMounted(() => {
   // Tauri içindeyse 5 sn sonra güncelleme kontrolü (PWA'da no-op)
   autoCheckOnStartup(5000);
 
-  // Lisans cache'ini yükle, 24h geçmişse sessiz re-verify et
-  license.loadCached();
-  if (license.status.value?.key && license.shouldReverify()) {
-    license.reverify().catch(() => { /* internet yoksa cache geçerli */ });
+  // Lisans cache'i yalnızca localhost'ta (Mac/Win Tauri app) anlamlı;
+  // telefondaki PWA Mac'in proxy'si, kendi lisans state'i tutmaz
+  if (auth.isLocalhost()) {
+    license.loadCached();
+    if (license.status.value?.key && license.shouldReverify()) {
+      license.reverify().catch(() => { /* internet yoksa cache geçerli */ });
+    }
   }
 });
 
@@ -99,9 +103,10 @@ const cameraWarning = computed(() => {
     <LiveNotification />
     <UpdateBanner />
 
-    <!-- Lisans uyarıları — sadece sorunlu durumlarda görünür -->
+    <!-- Lisans uyarıları — yalnızca localhost'ta (Mac/Win app), telefonda
+         lisans state'i ayrı; banner orada anlamsız -->
     <NuxtLink
-      v-if="license.status.value?.key && !license.isActive.value && !license.isPending.value"
+      v-if="auth.isLocalhost() && license.status.value?.key && !license.isActive.value && !license.isPending.value"
       to="/settings"
       class="block mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm active:opacity-80"
     >
@@ -121,7 +126,8 @@ const cameraWarning = computed(() => {
     </NuxtLink>
     <NuxtLink
       v-else-if="
-        license.isActive.value
+        auth.isLocalhost()
+          && license.isActive.value
           && license.daysUntilExpiry.value !== null
           && license.daysUntilExpiry.value <= 30
       "

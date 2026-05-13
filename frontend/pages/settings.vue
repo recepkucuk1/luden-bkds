@@ -200,10 +200,13 @@ onMounted(async () => {
     isIos.value = /iPad|iPhone|iPod/.test(navigator.userAgent);
   }
 
-  // Lisans cache'i yükle, 24h geçmişse sessiz re-verify
-  license.loadCached();
-  if (license.status.value?.key && license.shouldReverify()) {
-    license.reverify().catch(() => { /* network hatası önemli değil */ });
+  // Lisans yalnızca localhost'ta — telefonda PWA olarak açıldığında
+  // kendi lisans state'i değil, Mac üzerinden yönetilir
+  if (auth.isLocalhost()) {
+    license.loadCached();
+    if (license.status.value?.key && license.shouldReverify()) {
+      license.reverify().catch(() => { /* network hatası önemli değil */ });
+    }
   }
   try {
     const r = await $fetch<{ configured: boolean; info: any }>(
@@ -484,8 +487,9 @@ const notInSecureContext = computed(() => {
       </div>
     </section>
 
-    <!-- BRY Takip Lisansı -->
-    <section class="mt-5 px-4">
+    <!-- BRY Takip Lisansı — sadece localhost'ta (Mac/Windows app); telefonda
+         lisans kurum-bazlı yönetilir, Mac'ten girilir -->
+    <section v-if="auth.isLocalhost()" class="mt-5 px-4">
       <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
         BRY Takip Lisansı
       </h2>
