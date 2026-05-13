@@ -133,6 +133,11 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    # GitHub Actions default token READ-only çalışıyor; release oluşturmak için
+    # explicit write izni vermek lazım. Aksi halde softprops/action-gh-release
+    # "Resource not accessible by integration" döner.
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
