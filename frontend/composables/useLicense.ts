@@ -52,6 +52,7 @@ export interface LicenseStatus {
   currentPeriodEnd: string | null;
   expiresAt: string | null;
   key: string | null;
+  kurumEmail: string | null;  // brytakip.com'a yönlendirirken otomatik tanıma için
   lastVerifiedAt: string | null;
   message?: string;
 }
@@ -123,6 +124,31 @@ export const useLicense = () => {
    * SaaS'a lisansı sor. Hata olsa bile status değerini saklar
    * (network error'larda son bilinen status kalır).
    */
+  /**
+   * brytakip.com panel'i tarayıcıda aç. Kullanıcının email'i URL'de
+   * geçirilir → landing otomatik panel görünümüne yönlendirir.
+   * Tauri içindeysek shell.open ile dış tarayıcı, değilsek window.open.
+   */
+  const openCheckoutPage = async () => {
+    const email = status.value?.kurumEmail ?? '';
+    const url = email
+      ? `https://brytakip.com/?email=${encodeURIComponent(email)}#/panel`
+      : 'https://brytakip.com/#/signup';
+
+    if (typeof window === 'undefined') return;
+    const isInTauri = '__TAURI_INTERNALS__' in window || '__TAURI__' in window;
+    if (isInTauri) {
+      try {
+        const { open } = await import('@tauri-apps/plugin-shell');
+        await open(url);
+        return;
+      } catch {
+        // fallback aşağı düşer
+      }
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const verify = async (rawKey: string): Promise<LicenseStatus> => {
     const key = rawKey.trim().toUpperCase();
     if (!key) {
@@ -150,6 +176,7 @@ export const useLicense = () => {
         trialEndsAt: string | null;
         currentPeriodEnd: string | null;
         expiresAt: string;
+        kurumEmail?: string | null;
       }>(`${API_BASE}/api/license/verify`, {
         method: 'POST',
         body: { key, machineId },
@@ -162,10 +189,12 @@ export const useLicense = () => {
         currentPeriodEnd: resp.currentPeriodEnd ?? null,
         expiresAt: resp.expiresAt ?? null,
         key,
+        kurumEmail: resp.kurumEmail ?? null,
         lastVerifiedAt: new Date().toISOString(),
       };
     } catch (err: any) {
       const data = err?.data || err?.response?._data;
+      const cached = status.value;
       if (data?.status) {
         result = {
           status: data.status as LicenseRemoteStatus,
@@ -174,12 +203,11 @@ export const useLicense = () => {
           currentPeriodEnd: data.currentPeriodEnd ?? null,
           expiresAt: data.expiresAt ?? null,
           key,
+          kurumEmail: cached?.kurumEmail ?? null,
           lastVerifiedAt: new Date().toISOString(),
           message: data.error,
         };
       } else {
-        // Network down — cache'deki status'u koru
-        const cached = status.value;
         result = {
           status: 'NETWORK_ERROR',
           subStatus: cached?.subStatus ?? null,
@@ -187,6 +215,7 @@ export const useLicense = () => {
           currentPeriodEnd: cached?.currentPeriodEnd ?? null,
           expiresAt: cached?.expiresAt ?? null,
           key: cached?.key ?? key,
+          kurumEmail: cached?.kurumEmail ?? null,
           lastVerifiedAt: cached?.lastVerifiedAt ?? null,
           message: 'Sunucuya bağlanılamadı (internet yok?)',
         };
@@ -302,5 +331,6 @@ export const useLicense = () => {
     verify,
     reverify,
     shouldReverify,
+    openCheckoutPage,
   };
 };

@@ -626,20 +626,39 @@ const notInSecureContext = computed(() => {
         </div>
 
         <!-- Mevcut lisans aksiyonları -->
-        <div v-else class="pt-2 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+        <div v-else class="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
+          <!-- TRIAL: Aboneliği Başlat (vurgulu) -->
           <button
-            class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80"
-            @click="showLicenseEdit = true; licenseKeyInput = ''"
+            v-if="license.isSubTrial.value"
+            class="w-full px-3 py-2 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80"
+            @click="license.openCheckoutPage()"
           >
-            Lisansı değiştir
+            💳 Aboneliği Başlat — 279 ₺/ay
           </button>
+          <!-- ACTIVE / CANCELED: Yönet (web panele yönlendir) -->
           <button
-            :disabled="license.verifying.value"
-            class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80 disabled:opacity-50"
-            @click="reverifyNow"
+            v-else-if="license.isSubActive.value || license.isSubCanceled.value || license.isSubPastDue.value"
+            class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg active:opacity-80"
+            @click="license.openCheckoutPage()"
           >
-            {{ license.verifying.value ? 'Kontrol ediliyor...' : 'Yeniden doğrula' }}
+            Aboneliği Yönet ↗
           </button>
+          <!-- İkincil aksiyonlar -->
+          <div class="flex gap-2">
+            <button
+              class="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80"
+              @click="showLicenseEdit = true; licenseKeyInput = ''"
+            >
+              Lisansı değiştir
+            </button>
+            <button
+              :disabled="license.verifying.value"
+              class="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80 disabled:opacity-50"
+              @click="reverifyNow"
+            >
+              {{ license.verifying.value ? 'Kontrol ediliyor...' : 'Yeniden doğrula' }}
+            </button>
+          </div>
         </div>
 
         <!-- Açıklama (lisans yokken) -->
