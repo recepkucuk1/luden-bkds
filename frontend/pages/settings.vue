@@ -42,13 +42,18 @@ const reverifyNow = async () => {
   }
 };
 
-const planLabel = computed(() => {
-  switch (license.plan.value) {
-    case 'PRO': return 'PRO';
-    case 'STANDART': return 'Standart';
-    case 'LITE': return 'Lite';
-    default: return 'Lite';
+// Abonelik durumu (subStatus) — license.status'dan ayrı, çünkü
+// trial bitse bile license teknik olarak ACTIVE olabilir.
+const subLabel = computed(() => {
+  if (license.isSubTrial.value) {
+    const d = license.daysUntilTrialEnd.value;
+    return d !== null ? `Trial — ${d} gün` : 'Trial';
   }
+  if (license.isSubActive.value) return 'Aktif';
+  if (license.isSubCanceled.value) return 'İptal edildi (dönem sonuna kadar geçerli)';
+  if (license.isSubExpired.value) return 'Süresi doldu';
+  if (license.isSubPastDue.value) return 'Ödeme bekliyor';
+  return '—';
 });
 
 const statusLabel = computed(() => {
@@ -60,6 +65,7 @@ const statusLabel = computed(() => {
     case 'REVOKED': return 'İptal edilmiş';
     case 'WRONG_MACHINE': return 'Başka cihaza bağlı';
     case 'INVALID': return 'Geçersiz';
+    case 'SUBSCRIPTION_INVALID': return 'Abonelik aktif değil';
     case 'NETWORK_ERROR': return 'Bağlantı sorunu';
     default: return 'Lisans yok';
   }
@@ -68,7 +74,15 @@ const statusLabel = computed(() => {
 const statusVariant = computed<'green' | 'amber' | 'red' | 'gray'>(() => {
   if (license.isActive.value) return 'green';
   if (license.isPending.value) return 'amber';
-  if (license.isExpired.value || license.isRevoked.value || license.isWrongMachine.value || license.isInvalid.value) return 'red';
+  if (license.isExpired.value || license.isRevoked.value || license.isWrongMachine.value || license.isInvalid.value || license.isSubscriptionInvalid.value) return 'red';
+  return 'gray';
+});
+
+const subVariant = computed<'green' | 'amber' | 'red' | 'gray'>(() => {
+  if (license.isSubActive.value) return 'green';
+  if (license.isSubTrial.value) return 'amber';
+  if (license.isSubCanceled.value) return 'amber';
+  if (license.isSubExpired.value || license.isSubPastDue.value) return 'red';
   return 'gray';
 });
 
@@ -494,22 +508,24 @@ const notInSecureContext = computed(() => {
         BRY Takip Lisansı
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5">
-        <!-- Mevcut lisans bilgileri -->
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-700 dark:text-gray-200">Plan</span>
+        <!-- Abonelik durumu -->
+        <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">Abonelik</span>
           <span
             class="text-xs px-2 py-0.5 rounded-full font-medium"
             :class="{
-              'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200': license.plan.value === 'PRO',
-              'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200': license.plan.value === 'STANDART',
-              'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300': license.plan.value === 'LITE',
+              'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200': subVariant === 'green',
+              'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200': subVariant === 'amber',
+              'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200': subVariant === 'red',
+              'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300': subVariant === 'gray',
             }"
           >
-            {{ planLabel }}
+            {{ subLabel }}
           </span>
         </div>
+        <!-- Lisans durumu (key + machine) -->
         <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-700 dark:text-gray-200">Durum</span>
+          <span class="text-gray-700 dark:text-gray-200">Lisans</span>
           <span
             class="text-xs px-2 py-0.5 rounded-full"
             :class="{
@@ -522,13 +538,13 @@ const notInSecureContext = computed(() => {
             {{ statusLabel }}
           </span>
         </div>
-        <div v-if="license.expiresAt.value" class="flex items-center justify-between text-sm">
-          <span class="text-gray-700 dark:text-gray-200">Bitiş</span>
+        <!-- Sonraki tahsilat / dönem bitimi -->
+        <div v-if="license.currentPeriodEnd.value" class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">
+            {{ license.isSubTrial.value ? 'Trial bitiş' : license.isSubCanceled.value ? 'Erişim sonu' : 'Sonraki tahsilat' }}
+          </span>
           <span class="text-[11px] text-gray-500 dark:text-gray-400">
-            {{ new Date(license.expiresAt.value).toLocaleDateString('tr-TR') }}
-            <span v-if="license.daysUntilExpiry.value !== null" class="ml-1">
-              ({{ license.daysUntilExpiry.value }} gün)
-            </span>
+            {{ new Date(license.currentPeriodEnd.value).toLocaleDateString('tr-TR') }}
           </span>
         </div>
         <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">

@@ -26,8 +26,7 @@ const STORAGE_KEY = 'brytakip-license';
 const MACHINE_ID_KEY = 'brytakip-machine-id';
 const REVERIFY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24h
 
-export type LicensePlan = 'LITE' | 'STANDART' | 'PRO';
-
+// Backend tek plan'a geçti — 'plan' field'ı yerine 'subStatus' kullanılır
 export type LicenseRemoteStatus =
   | 'ACTIVE'
   | 'PENDING'
@@ -35,11 +34,22 @@ export type LicenseRemoteStatus =
   | 'REVOKED'
   | 'INVALID'
   | 'WRONG_MACHINE'
+  | 'SUBSCRIPTION_INVALID' // trial bitti veya abonelik EXPIRED/PAST_DUE
   | 'NETWORK_ERROR';
+
+export type SubscriptionStatus =
+  | 'TRIAL'
+  | 'ACTIVE'
+  | 'CANCELED'
+  | 'EXPIRED'
+  | 'PAST_DUE'
+  | 'NONE'; // backend subscription bulamadı
 
 export interface LicenseStatus {
   status: LicenseRemoteStatus;
-  plan: LicensePlan | null;
+  subStatus: SubscriptionStatus | null;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
   expiresAt: string | null;
   key: string | null;
   lastVerifiedAt: string | null;
@@ -118,7 +128,9 @@ export const useLicense = () => {
     if (!key) {
       const r: LicenseStatus = {
         status: 'INVALID',
-        plan: null,
+        subStatus: null,
+        trialEndsAt: null,
+        currentPeriodEnd: null,
         expiresAt: null,
         key: null,
         lastVerifiedAt: new Date().toISOString(),
@@ -134,7 +146,9 @@ export const useLicense = () => {
     try {
       const resp = await $fetch<{
         status: LicenseRemoteStatus;
-        plan: LicensePlan;
+        subStatus: SubscriptionStatus | null;
+        trialEndsAt: string | null;
+        currentPeriodEnd: string | null;
         expiresAt: string;
       }>(`${API_BASE}/api/license/verify`, {
         method: 'POST',
@@ -143,30 +157,34 @@ export const useLicense = () => {
       });
       result = {
         status: resp.status,
-        plan: resp.plan ?? null,
+        subStatus: resp.subStatus ?? null,
+        trialEndsAt: resp.trialEndsAt ?? null,
+        currentPeriodEnd: resp.currentPeriodEnd ?? null,
         expiresAt: resp.expiresAt ?? null,
         key,
         lastVerifiedAt: new Date().toISOString(),
       };
     } catch (err: any) {
-      // $fetch non-2xx'lerde fırlatır; body err.data'da
       const data = err?.data || err?.response?._data;
       if (data?.status) {
-        // Backend açık hata döndü (404 INVALID, 403 REVOKED/WRONG_MACHINE)
         result = {
           status: data.status as LicenseRemoteStatus,
-          plan: data.plan ?? null,
+          subStatus: data.subStatus ?? null,
+          trialEndsAt: data.trialEndsAt ?? null,
+          currentPeriodEnd: data.currentPeriodEnd ?? null,
           expiresAt: data.expiresAt ?? null,
           key,
           lastVerifiedAt: new Date().toISOString(),
           message: data.error,
         };
       } else {
-        // Network down — cache'deki status'u koru, sadece "network error" flag
+        // Network down — cache'deki status'u koru
         const cached = status.value;
         result = {
           status: 'NETWORK_ERROR',
-          plan: cached?.plan ?? null,
+          subStatus: cached?.subStatus ?? null,
+          trialEndsAt: cached?.trialEndsAt ?? null,
+          currentPeriodEnd: cached?.currentPeriodEnd ?? null,
           expiresAt: cached?.expiresAt ?? null,
           key: cached?.key ?? key,
           lastVerifiedAt: cached?.lastVerifiedAt ?? null,
@@ -202,15 +220,47 @@ export const useLicense = () => {
   };
 
   // ── Computed durumlar ─────────────────────────────────────────
+  // License-level (key veya machine sorunu)
   const isActive = computed(() => status.value?.status === 'ACTIVE');
   const isPending = computed(() => status.value?.status === 'PENDING');
   const isExpired = computed(() => status.value?.status === 'EXPIRED');
   const isRevoked = computed(() => status.value?.status === 'REVOKED');
   const isWrongMachine = computed(() => status.value?.status === 'WRONG_MACHINE');
   const isInvalid = computed(() => status.value?.status === 'INVALID');
+
+  // Subscription-level
+  const subStatus = computed(() => status.value?.subStatus ?? null);
+  const isSubTrial = computed(() => subStatus.value === 'TRIAL');
+  const isSubActive = computed(() => subStatus.value === 'ACTIVE');
+  const isSubCanceled = computed(() => subStatus.value === 'CANCELED');
+  const isSubExpired = computed(() => subStatus.value === 'EXPIRED');
+  const isSubPastDue = computed(() => subStatus.value === 'PAST_DUE');
+  const isSubscriptionInvalid = computed(() => status.value?.status === 'SUBSCRIPTION_INVALID');
+
+  /** App fiilen kullanılabilir mi? License OK + subscription pencerede. */
   const isUsable = computed(() => isActive.value || isPending.value);
-  const plan = computed<LicensePlan>(() => status.value?.plan ?? 'LITE');
+
   const expiresAt = computed(() => status.value?.expiresAt ?? null);
+  const trialEndsAt = computed(() => status.value?.trialEndsAt ?? null);
+  const currentPeriodEnd = computed(() => status.value?.currentPeriodEnd ?? null);
+
+  /** Trial bitimine kalan gün — TRIAL durumunda anlamlı. */
+  const daysUntilTrialEnd = computed(() => {
+    if (!status.value?.trialEndsAt) return null;
+    const ms = new Date(status.value.trialEndsAt).getTime() - Date.now();
+    if (Number.isNaN(ms)) return null;
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  });
+
+  /** Aktif aboneliğin dönem bitimine kalan gün. */
+  const daysUntilPeriodEnd = computed(() => {
+    if (!status.value?.currentPeriodEnd) return null;
+    const ms = new Date(status.value.currentPeriodEnd).getTime() - Date.now();
+    if (Number.isNaN(ms)) return null;
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  });
+
+  /** Lisans expiresAt'a kalan gün (genelde subscription'la aynı). */
   const daysUntilExpiry = computed(() => {
     if (!status.value?.expiresAt) return null;
     const ms = new Date(status.value.expiresAt).getTime() - Date.now();
@@ -221,6 +271,7 @@ export const useLicense = () => {
   return {
     status: readonly(status),
     verifying: readonly(verifying),
+    // License flags
     isActive,
     isPending,
     isExpired,
@@ -228,9 +279,22 @@ export const useLicense = () => {
     isWrongMachine,
     isInvalid,
     isUsable,
-    plan,
+    // Subscription flags
+    subStatus,
+    isSubTrial,
+    isSubActive,
+    isSubCanceled,
+    isSubExpired,
+    isSubPastDue,
+    isSubscriptionInvalid,
+    // Dates
+    trialEndsAt,
+    currentPeriodEnd,
     expiresAt,
+    daysUntilTrialEnd,
+    daysUntilPeriodEnd,
     daysUntilExpiry,
+    // Actions
     getMachineId,
     loadCached,
     saveCached,
