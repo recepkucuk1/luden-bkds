@@ -508,9 +508,15 @@ const notInSecureContext = computed(() => {
         BRY Takip Lisansı
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5">
+        <!-- Plan başlığı (her zaman görünür, kullanıcıya ne ödediğini hatırlatır) -->
+        <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
+          <span class="text-gray-700 dark:text-gray-200">Plan</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">BRY Takip — 279 ₺/ay</span>
+        </div>
+
         <!-- Abonelik durumu -->
         <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
-          <span class="text-gray-700 dark:text-gray-200">Abonelik</span>
+          <span class="text-gray-700 dark:text-gray-200">Durum</span>
           <span
             class="text-xs px-2 py-0.5 rounded-full font-medium"
             :class="{
@@ -523,6 +529,43 @@ const notInSecureContext = computed(() => {
             {{ subLabel }}
           </span>
         </div>
+
+        <!-- TRIAL bilgisi: bitiş tarihi + ardından ne olacağı -->
+        <template v-if="license.isSubTrial.value && license.trialEndsAt.value">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-700 dark:text-gray-200">Trial bitiş</span>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400">
+              {{ new Date(license.trialEndsAt.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+            </span>
+          </div>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pl-1">
+            Trial bittikten sonra otomatik <strong>279 ₺ aylık tahsilat</strong> başlar.
+            Trial içinde iptal ederseniz ücret çekilmez.
+          </p>
+        </template>
+
+        <!-- ACTIVE: sonraki aylık tahsilat -->
+        <div
+          v-else-if="license.isSubActive.value && license.currentPeriodEnd.value"
+          class="flex items-center justify-between text-sm"
+        >
+          <span class="text-gray-700 dark:text-gray-200">Sonraki tahsilat</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400">
+            {{ new Date(license.currentPeriodEnd.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+          </span>
+        </div>
+
+        <!-- CANCELED: erişim ne zaman biter -->
+        <div
+          v-else-if="license.isSubCanceled.value && license.currentPeriodEnd.value"
+          class="flex items-center justify-between text-sm"
+        >
+          <span class="text-gray-700 dark:text-gray-200">Erişim sonu</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400">
+            {{ new Date(license.currentPeriodEnd.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+          </span>
+        </div>
+
         <!-- Lisans durumu (key + machine) -->
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Lisans</span>
@@ -536,15 +579,6 @@ const notInSecureContext = computed(() => {
             }"
           >
             {{ statusLabel }}
-          </span>
-        </div>
-        <!-- Sonraki tahsilat / dönem bitimi -->
-        <div v-if="license.currentPeriodEnd.value" class="flex items-center justify-between text-sm">
-          <span class="text-gray-700 dark:text-gray-200">
-            {{ license.isSubTrial.value ? 'Trial bitiş' : license.isSubCanceled.value ? 'Erişim sonu' : 'Sonraki tahsilat' }}
-          </span>
-          <span class="text-[11px] text-gray-500 dark:text-gray-400">
-            {{ new Date(license.currentPeriodEnd.value).toLocaleDateString('tr-TR') }}
           </span>
         </div>
         <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
