@@ -14,6 +14,13 @@
  * Tauri client her açılışta tauri.conf.json'daki endpoint URL'sinden bu JSON'u
  * çeker; içindeki sürümü kendi sürümüyle karşılaştırır; daha yeniyse imzayı
  * doğrulayıp .app.tar.gz / setup.exe'yi indirip kurar.
+ *
+ * NOT: Tauri 2 bundle çıktıları platforma göre alt klasörlerde olur:
+ *   macos-build/dmg/*.dmg
+ *   macos-build/macos/*.app.tar.gz + .sig
+ *   windows-build/msi/*.msi
+ *   windows-build/nsis/*-setup.exe + .sig
+ * Bu yüzden arama recursive yapılır.
  */
 
 const fs = require('node:fs');
@@ -34,38 +41,50 @@ if (!repo) {
 
 const releaseUrlBase = `https://github.com/${repo}/releases/download/${tagRef}`;
 
+/** Recursive — dir altındaki tüm dosyaları (alt klasörler dahil) düz liste döndürür. */
+function walkFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, item.name);
+    if (item.isDirectory()) out.push(...walkFiles(full));
+    else if (item.isFile()) out.push(full);
+  }
+  return out;
+}
+
 const platforms = {};
 
 // macOS Apple Silicon
 const macDir = path.join(artifactsDir, 'macos-build');
-if (fs.existsSync(macDir)) {
-  const files = fs.readdirSync(macDir);
-  const tarGz = files.find((f) => f.endsWith('.app.tar.gz'));
-  const sig = files.find((f) => f.endsWith('.app.tar.gz.sig'));
-  if (tarGz && sig) {
-    platforms['darwin-aarch64'] = {
-      signature: fs.readFileSync(path.join(macDir, sig), 'utf8').trim(),
-      url: `${releaseUrlBase}/${encodeURIComponent(tarGz)}`,
-    };
-  } else {
-    console.error(`uyarı: macOS .app.tar.gz veya .sig bulunamadı (${files.join(', ')})`);
-  }
+const macFiles = walkFiles(macDir);
+const macTarGz = macFiles.find((f) => f.endsWith('.app.tar.gz'));
+const macSig = macFiles.find((f) => f.endsWith('.app.tar.gz.sig'));
+if (macTarGz && macSig) {
+  platforms['darwin-aarch64'] = {
+    signature: fs.readFileSync(macSig, 'utf8').trim(),
+    url: `${releaseUrlBase}/${encodeURIComponent(path.basename(macTarGz))}`,
+  };
+} else if (macFiles.length > 0) {
+  console.error(
+    `uyarı: macOS .app.tar.gz veya .sig bulunamadı (${macFiles.map((f) => path.basename(f)).join(', ')})`,
+  );
 }
 
 // Windows x64 — NSIS setup.exe (auto-updater için tercih edilen format)
 const winDir = path.join(artifactsDir, 'windows-build');
-if (fs.existsSync(winDir)) {
-  const files = fs.readdirSync(winDir);
-  const exe = files.find((f) => f.endsWith('-setup.exe'));
-  const sig = files.find((f) => f.endsWith('-setup.exe.sig'));
-  if (exe && sig) {
-    platforms['windows-x86_64'] = {
-      signature: fs.readFileSync(path.join(winDir, sig), 'utf8').trim(),
-      url: `${releaseUrlBase}/${encodeURIComponent(exe)}`,
-    };
-  } else {
-    console.error(`uyarı: Windows -setup.exe veya .sig bulunamadı (${files.join(', ')})`);
-  }
+const winFiles = walkFiles(winDir);
+const winExe = winFiles.find((f) => f.endsWith('-setup.exe'));
+const winSig = winFiles.find((f) => f.endsWith('-setup.exe.sig'));
+if (winExe && winSig) {
+  platforms['windows-x86_64'] = {
+    signature: fs.readFileSync(winSig, 'utf8').trim(),
+    url: `${releaseUrlBase}/${encodeURIComponent(path.basename(winExe))}`,
+  };
+} else if (winFiles.length > 0) {
+  console.error(
+    `uyarı: Windows -setup.exe veya .sig bulunamadı (${winFiles.map((f) => path.basename(f)).join(', ')})`,
+  );
 }
 
 const manifest = {

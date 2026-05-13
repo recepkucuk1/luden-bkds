@@ -161,11 +161,13 @@ jobs:
         run: cat latest.json
 
       - name: Create GitHub Release
+        # Glob patterns recursive (`**/*`) — Tauri 2 bundle çıktıları
+        # alt klasörlerde: dmg/, macos/, msi/, nsis/.
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/macos-build/*
-            artifacts/windows-build/*
+            artifacts/macos-build/**/*
+            artifacts/windows-build/**/*
             latest.json
           draft: false
           prerelease: false
