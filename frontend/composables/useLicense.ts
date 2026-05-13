@@ -24,7 +24,9 @@
 const API_BASE = 'https://brytakip.com';
 const STORAGE_KEY = 'brytakip-license';
 const MACHINE_ID_KEY = 'brytakip-machine-id';
-const REVERIFY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24h
+const REVERIFY_INTERVAL_MS = 60 * 60 * 1000; // 1 saat — admin/iyzico iptalleri makul süre içinde yakalansın
+const PERIODIC_REVERIFY_INTERVAL_MS = 30 * 60 * 1000; // app açıkken 30 dk'da bir background tick
+const NETWORK_GRACE_MS = 24 * 60 * 60 * 1000; // internet 24 saatten fazla yoksa hard-block
 
 // Backend tek plan'a geçti — 'plan' field'ı yerine 'subStatus' kullanılır
 export type LicenseRemoteStatus =
@@ -281,6 +283,31 @@ export const useLicense = () => {
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
   });
 
+  /**
+   * Lisans key var ama lisans kullanılamaz mı?
+   * Hard-block için kritik: bu true ise uygulama BKDS data'sını
+   * göstermemeli, kullanıcıya "ödeme/yenileme" modalı açmalı.
+   *
+   * Network error toleransı: son başarılı verify'den NETWORK_GRACE_MS
+   * (24 saat) geçmemişse, henüz block etme — kullanıcı offline'da çalışabilsin.
+   */
+  const isBlocked = computed(() => {
+    const s = status.value;
+    if (!s?.key) return false; // henüz lisans aktive etmemiş — block değil, "aktive et" UX'i
+    // Sert reddedilenler: hemen block
+    if (s.status === 'INVALID' || s.status === 'REVOKED' || s.status === 'WRONG_MACHINE') return true;
+    if (s.status === 'EXPIRED' || s.status === 'SUBSCRIPTION_INVALID') return true;
+    // Subscription tarafı pasif olduysa block
+    if (s.subStatus === 'EXPIRED' || s.subStatus === 'PAST_DUE' || s.subStatus === 'NONE') return true;
+    // NETWORK_ERROR: 24 saatten az süredir offline'sak block etme
+    if (s.status === 'NETWORK_ERROR') {
+      if (!s.lastVerifiedAt) return true; // hiç verify yapmadıysak block
+      const since = Date.now() - new Date(s.lastVerifiedAt).getTime();
+      return since > NETWORK_GRACE_MS;
+    }
+    return false;
+  });
+
   /** Aktif aboneliğin dönem bitimine kalan gün. */
   const daysUntilPeriodEnd = computed(() => {
     if (!status.value?.currentPeriodEnd) return null;
@@ -316,6 +343,7 @@ export const useLicense = () => {
     isSubExpired,
     isSubPastDue,
     isSubscriptionInvalid,
+    isBlocked,
     // Dates
     trialEndsAt,
     currentPeriodEnd,

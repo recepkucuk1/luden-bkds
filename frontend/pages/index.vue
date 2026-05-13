@@ -9,6 +9,7 @@ const auth = useAuth();
 // İçerideyken süre canlı sayar
 const now = useState<number>('app-now', () => Date.now());
 let nowTimer: ReturnType<typeof setInterval>;
+let licenseTickTimer: ReturnType<typeof setInterval>;
 
 onMounted(() => {
   fetchSnapshot();
@@ -27,12 +28,20 @@ onMounted(() => {
     if (license.status.value?.key && license.shouldReverify()) {
       license.reverify().catch(() => { /* internet yoksa cache geçerli */ });
     }
+    // 30 dk'da bir background reverify — admin'den iptal makul süre içinde
+    // yansır, kullanıcı uygulamayı kapatıp açmasa bile.
+    licenseTickTimer = setInterval(() => {
+      if (license.status.value?.key && license.shouldReverify()) {
+        license.reverify().catch(() => { /* sessiz */ });
+      }
+    }, 30 * 60 * 1000);
   }
 });
 
 onUnmounted(() => {
   disconnectWs();
   if (nowTimer) clearInterval(nowTimer);
+  if (licenseTickTimer) clearInterval(licenseTickTimer);
 });
 
 const onResume = () => {
@@ -100,6 +109,63 @@ const cameraWarning = computed(() => {
 <template>
   <div class="min-h-screen bg-white dark:bg-gray-900 pb-8">
     <AppHeader />
+
+    <!-- Hard block — abonelik/lisans iptal/expired/wrong-machine durumunda
+         BKDS verisini göstermeyi engelle. Sadece localhost'ta (Mac/Win app);
+         PWA'da bu kontrol Mac üzerinden yapılır. -->
+    <div
+      v-if="auth.isLocalhost() && license.isBlocked.value"
+      class="fixed inset-0 z-50 bg-gray-900/95 dark:bg-gray-950/98 backdrop-blur flex items-center justify-center p-6"
+    >
+      <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 flex items-center justify-center text-xl">
+            ⛔
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Uygulama Kullanılamaz
+          </h2>
+        </div>
+        <p class="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-4">
+          {{
+            license.isWrongMachine.value
+              ? 'Lisansınız başka bir cihaza bağlı. Bu cihazda kullanmak için aboneliğinizi yönetin veya destek alın.'
+              : license.isRevoked.value
+                ? 'Lisansınız iptal edilmiş. Aboneliğinizi yenilemek için brytakip.com adresinden ödeme yapın.'
+                : license.isSubscriptionInvalid.value || license.subStatus.value === 'EXPIRED' || license.subStatus.value === 'PAST_DUE'
+                  ? 'Aboneliğiniz aktif değil. Yenilemek için brytakip.com adresinden ödeme yapın.'
+                  : license.isExpired.value
+                    ? 'Lisans süreniz dolmuş. Yenilemek için brytakip.com.'
+                    : 'Lisansınız geçersiz görünüyor. Detay için brytakip.com / WhatsApp.'
+          }}
+        </p>
+        <div class="space-y-2">
+          <button
+            class="block w-full px-4 py-2.5 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80"
+            @click="license.openCheckoutPage()"
+          >
+            Aboneliği Yönet ↗
+          </button>
+          <NuxtLink
+            to="/settings"
+            class="block w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg text-center active:opacity-80"
+          >
+            Ayarlar → Lisansı yenile
+          </NuxtLink>
+          <button
+            :disabled="license.verifying.value"
+            class="block w-full px-4 py-2 text-xs text-gray-500 dark:text-gray-400 active:opacity-80 disabled:opacity-50"
+            @click="license.reverify(true)"
+          >
+            {{ license.verifying.value ? 'Kontrol ediliyor...' : 'Tekrar dene' }}
+          </button>
+        </div>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-4 text-center">
+          Sorun varsa: <a href="mailto:info@brytakip.com" class="underline">info@brytakip.com</a>
+        </p>
+      </div>
+    </div>
+
     <LiveNotification />
     <UpdateBanner />
 
