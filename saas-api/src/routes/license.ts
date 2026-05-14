@@ -22,12 +22,7 @@ interface IssueBody {
 
 export default async function licenseRoutes(app: FastifyInstance) {
   // ─── verify (public) ────────────────────────────────────────
-  // Public + lisans-key brute-force hedefi → global limitten daha sıkı.
-  // Uygulama normalde saatte bir reverify eder, 20/dk fazlasıyla yeter.
-  app.post<{ Body: VerifyBody }>(
-    '/api/license/verify',
-    { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
-    async (req, reply) => {
+  app.post<{ Body: VerifyBody }>('/api/license/verify', async (req, reply) => {
     const body = req.body ?? {};
     const key = String(body.key ?? '').trim();
     const machineId = String(body.machineId ?? '').trim();

@@ -1,6 +1,6 @@
 {
   "name": "brytakip-backend",
-  "version": "0.3.7",
+  "version": "0.1.0",
   "description": "BRY Takip - Backend (INNOVA BRY API client + WebSocket + polling)",
   "type": "module",
   "scripts": {

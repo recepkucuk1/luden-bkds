@@ -12,7 +12,7 @@
 
 **İş modeli:** Lisanslı yerel kurulum + freemium SaaS abonelik.
 - Lite: ücretsiz (temel görüntüleme)
-- Standart: 249₺/ay (~2490₺/yıl)
+- Standart: 299₺/ay (~2990₺/yıl)
 - Pro: 599₺/ay (çoklu kullanıcı + raporlar)
 
 **Kurucu:** Recep Küçük — LudenLab kurucusu, **Luden Keşif** isimli özel eğitim merkezinin sahibi (İzmir). Hem kullanıcı hem geliştirici. Sektörü içeriden bilen biri.

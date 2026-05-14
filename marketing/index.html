@@ -828,11 +828,11 @@
     }
 
     // ────── Signup ──────
-    // API endpoint — aynı origin (Fastify hem static hem API serve eder).
-    // Dev: localhost:3000; Prod: brytakip.com (relative path).
+    // API endpoint — Vercel'de api.brytakip.com olarak deploy edilir.
+    // Geliştirme aşamasında localhost:3000 (vercel dev) kullanılabilir.
     const API_BASE = window.location.hostname === 'localhost'
       ? 'http://localhost:3000'
-      : '';
+      : 'https://api.brytakip.com';
 
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();

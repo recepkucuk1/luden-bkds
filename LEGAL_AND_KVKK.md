@@ -84,7 +84,7 @@ MEB BKDS sistemi 2026'da zorunlu oldu. Etrafındaki mevzuat **netleşme aşamas�
 
 ### Sebep 5: Kurum Sahibinin Güveni
 
-Kurum sahibi 249₺/ay öderken sorar: **"Verim sizin sunucunuzda mı?"**
+Kurum sahibi 299₺/ay öderken sorar: **"Verim sizin sunucunuzda mı?"**
 
 - "Evet, bizim cloud'umuzda" → uzun açıklama, güvensizlik
 - "Hayır, sizin bilgisayarınızda kalıyor, biz sadece yazılım veriyoruz" → kısa, anlaşılır, güven
@@ -210,7 +210,7 @@ Bizim durum:
 - Pratik: Adapter mimarisi ile 1-2 günde uyum sağlarız
 
 **Tepki 3:** "Müşterilerimize 'bu yazılımı kullanmayın' diyelim"
-- **Cevap:** Onların müşterileri zaten kendi parasıyla 249₺ ödüyor. INNOVA'nın "şu yazılımı kullanma" demesi kurumla ilişkisini bozar.
+- **Cevap:** Onların müşterileri zaten kendi parasıyla 299₺ ödüyor. INNOVA'nın "şu yazılımı kullanma" demesi kurumla ilişkisini bozar.
 
 **En kötü senaryo:** INNOVA bizi mahkemeye verir.
 - **Sonuç:** Hukuki süreç 1-2 yıl. Bu süreçte:

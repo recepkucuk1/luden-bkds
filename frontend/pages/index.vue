@@ -110,7 +110,7 @@ const cameraWarning = computed(() => {
   <div class="min-h-screen bg-white dark:bg-gray-900 pb-8">
     <AppHeader />
 
-    <!-- Hard block — lisans iptal/expired/wrong-machine durumunda
+    <!-- Hard block — abonelik/lisans iptal/expired/wrong-machine durumunda
          BKDS verisini göstermeyi engelle. Sadece localhost'ta (Mac/Win app);
          PWA'da bu kontrol Mac üzerinden yapılır. -->
     <div
@@ -129,12 +129,14 @@ const cameraWarning = computed(() => {
         <p class="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-4">
           {{
             license.isWrongMachine.value
-              ? 'Lisansınız başka bir cihaza bağlı. Bu cihazda kullanmak için destek alın.'
+              ? 'Lisansınız başka bir cihaza bağlı. Bu cihazda kullanmak için aboneliğinizi yönetin veya destek alın.'
               : license.isRevoked.value
-                ? 'Lisansınız iptal edilmiş. Yenilemek için brytakip.com adresinden ödeme yapın.'
-                : license.isExpired.value
-                  ? 'Lisans süreniz dolmuş. Yenilemek için brytakip.com.'
-                  : 'Lisansınız geçersiz görünüyor. Detay için brytakip.com / WhatsApp.'
+                ? 'Lisansınız iptal edilmiş. Aboneliğinizi yenilemek için brytakip.com adresinden ödeme yapın.'
+                : license.isSubscriptionInvalid.value || license.subStatus.value === 'EXPIRED' || license.subStatus.value === 'PAST_DUE'
+                  ? 'Aboneliğiniz aktif değil. Yenilemek için brytakip.com adresinden ödeme yapın.'
+                  : license.isExpired.value
+                    ? 'Lisans süreniz dolmuş. Yenilemek için brytakip.com.'
+                    : 'Lisansınız geçersiz görünüyor. Detay için brytakip.com / WhatsApp.'
           }}
         </p>
         <div class="space-y-2">
@@ -167,8 +169,10 @@ const cameraWarning = computed(() => {
     <LiveNotification />
     <UpdateBanner />
 
-    <!-- Lisans uyarısı — yalnızca localhost'ta (Mac/Win app);
-         telefonda lisans state'i ayrı, banner orada anlamsız. -->
+    <!-- Lisans / Abonelik uyarıları — yalnızca localhost'ta (Mac/Win app);
+         telefonda lisans state'i ayrı, banner orada anlamsız.
+
+         Öncelik: hard error (lisans pasif veya abonelik bitti) → trial countdown -->
     <NuxtLink
       v-if="
         auth.isLocalhost()
@@ -176,23 +180,62 @@ const cameraWarning = computed(() => {
           && (license.isExpired.value
               || license.isRevoked.value
               || license.isWrongMachine.value
-              || license.isInvalid.value)
+              || license.isInvalid.value
+              || license.isSubscriptionInvalid.value)
       "
       to="/settings"
       class="block mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm active:opacity-80"
     >
       <p class="font-medium">
         {{
-          license.isExpired.value
-            ? 'Lisans süresi doldu'
-            : license.isRevoked.value
-              ? 'Lisans iptal edilmiş'
-              : license.isWrongMachine.value
-                ? 'Lisans başka bir cihaza bağlı'
-                : 'Lisans geçersiz'
+          license.isSubscriptionInvalid.value
+            ? 'Aboneliğiniz aktif değil — uygulama kullanılamaz'
+            : license.isExpired.value
+              ? 'Lisans süresi doldu'
+              : license.isRevoked.value
+                ? 'Lisans iptal edilmiş'
+                : license.isWrongMachine.value
+                  ? 'Lisans başka bir cihaza bağlı'
+                  : 'Lisans geçersiz'
         }}
       </p>
-      <p class="text-[11px] mt-0.5 opacity-80">brytakip.com'dan lisansı yenile veya iletişime geç</p>
+      <p class="text-[11px] mt-0.5 opacity-80">brytakip.com'dan aboneliği yenile veya iletişime geç</p>
+    </NuxtLink>
+
+    <!-- Trial countdown: 3 gün kala uyarı banner'ı -->
+    <NuxtLink
+      v-else-if="
+        auth.isLocalhost()
+          && license.isSubTrial.value
+          && license.daysUntilTrialEnd.value !== null
+          && license.daysUntilTrialEnd.value <= 3
+      "
+      to="/settings"
+      class="block mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-sm active:opacity-80"
+    >
+      <p class="font-medium">
+        Trial bitimine
+        {{ license.daysUntilTrialEnd.value === 0 ? 'bugün' : license.daysUntilTrialEnd.value + ' gün' }}
+        kaldı
+      </p>
+      <p class="text-[11px] mt-0.5 opacity-80">Aboneliği başlat: brytakip.com</p>
+    </NuxtLink>
+
+    <!-- İptal edilen abonelik: dönem sonuna yaklaşma uyarısı -->
+    <NuxtLink
+      v-else-if="
+        auth.isLocalhost()
+          && license.isSubCanceled.value
+          && license.daysUntilPeriodEnd.value !== null
+          && license.daysUntilPeriodEnd.value <= 7
+      "
+      to="/settings"
+      class="block mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-sm active:opacity-80"
+    >
+      <p class="font-medium">
+        Erişim {{ license.daysUntilPeriodEnd.value }} gün sonra sona erecek
+      </p>
+      <p class="text-[11px] mt-0.5 opacity-80">İptal'i geri almak için brytakip.com</p>
     </NuxtLink>
 
     <div v-if="error" class="mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm">
