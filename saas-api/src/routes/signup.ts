@@ -25,7 +25,12 @@ interface SignupBody {
 }
 
 export default async function signupRoute(app: FastifyInstance) {
-  app.post<{ Body: SignupBody }>('/api/signup', async (req, reply) => {
+  // Public — kayıt spam'ine karşı global limitten daha sıkı. Signup nadir bir
+  // aksiyon, 5/dk meşru kullanım için fazlasıyla yeter.
+  app.post<{ Body: SignupBody }>(
+    '/api/signup',
+    { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } },
+    async (req, reply) => {
     const body = req.body ?? {};
 
     const kurum = String(body.kurum ?? '').trim();

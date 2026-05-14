@@ -42,18 +42,14 @@ const reverifyNow = async () => {
   }
 };
 
-// Abonelik durumu (subStatus) — license.status'dan ayrı, çünkü
-// trial bitse bile license teknik olarak ACTIVE olabilir.
-const subLabel = computed(() => {
-  if (license.isSubTrial.value) {
-    const d = license.daysUntilTrialEnd.value;
-    return d !== null ? `Trial — ${d} gün` : 'Trial';
+// Plan etiketi — backend'in döndürdüğü plan'a göre.
+const planLabel = computed(() => {
+  switch (license.plan.value) {
+    case 'STANDART': return 'Standart — 249 ₺/ay';
+    case 'PRO': return 'Pro — 599 ₺/ay';
+    case 'LITE': return 'Lite (ücretsiz)';
+    default: return 'BRY Takip';
   }
-  if (license.isSubActive.value) return 'Aktif';
-  if (license.isSubCanceled.value) return 'İptal edildi (dönem sonuna kadar geçerli)';
-  if (license.isSubExpired.value) return 'Süresi doldu';
-  if (license.isSubPastDue.value) return 'Ödeme bekliyor';
-  return '—';
 });
 
 const statusLabel = computed(() => {
@@ -65,7 +61,6 @@ const statusLabel = computed(() => {
     case 'REVOKED': return 'İptal edilmiş';
     case 'WRONG_MACHINE': return 'Başka cihaza bağlı';
     case 'INVALID': return 'Geçersiz';
-    case 'SUBSCRIPTION_INVALID': return 'Abonelik aktif değil';
     case 'NETWORK_ERROR': return 'Bağlantı sorunu';
     default: return 'Lisans yok';
   }
@@ -74,15 +69,7 @@ const statusLabel = computed(() => {
 const statusVariant = computed<'green' | 'amber' | 'red' | 'gray'>(() => {
   if (license.isActive.value) return 'green';
   if (license.isPending.value) return 'amber';
-  if (license.isExpired.value || license.isRevoked.value || license.isWrongMachine.value || license.isInvalid.value || license.isSubscriptionInvalid.value) return 'red';
-  return 'gray';
-});
-
-const subVariant = computed<'green' | 'amber' | 'red' | 'gray'>(() => {
-  if (license.isSubActive.value) return 'green';
-  if (license.isSubTrial.value) return 'amber';
-  if (license.isSubCanceled.value) return 'amber';
-  if (license.isSubExpired.value || license.isSubPastDue.value) return 'red';
+  if (license.isExpired.value || license.isRevoked.value || license.isWrongMachine.value || license.isInvalid.value) return 'red';
   return 'gray';
 });
 
@@ -511,58 +498,17 @@ const notInSecureContext = computed(() => {
         <!-- Plan başlığı (her zaman görünür, kullanıcıya ne ödediğini hatırlatır) -->
         <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Plan</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">BRY Takip — 279 ₺/ay</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{ planLabel }}</span>
         </div>
 
-        <!-- Abonelik durumu -->
-        <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
-          <span class="text-gray-700 dark:text-gray-200">Durum</span>
-          <span
-            class="text-xs px-2 py-0.5 rounded-full font-medium"
-            :class="{
-              'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200': subVariant === 'green',
-              'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200': subVariant === 'amber',
-              'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200': subVariant === 'red',
-              'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300': subVariant === 'gray',
-            }"
-          >
-            {{ subLabel }}
-          </span>
-        </div>
-
-        <!-- TRIAL bilgisi: bitiş tarihi + ardından ne olacağı -->
-        <template v-if="license.isSubTrial.value && license.trialEndsAt.value">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-700 dark:text-gray-200">Trial bitiş</span>
-            <span class="text-[11px] text-gray-500 dark:text-gray-400">
-              {{ new Date(license.trialEndsAt.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
-            </span>
-          </div>
-          <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pl-1">
-            Trial bittikten sonra otomatik <strong>279 ₺ aylık tahsilat</strong> başlar.
-            Trial içinde iptal ederseniz ücret çekilmez.
-          </p>
-        </template>
-
-        <!-- ACTIVE: sonraki aylık tahsilat -->
+        <!-- Geçerlilik — lisans bu tarihe kadar aktif -->
         <div
-          v-else-if="license.isSubActive.value && license.currentPeriodEnd.value"
+          v-if="license.status.value?.key && license.expiresAt.value"
           class="flex items-center justify-between text-sm"
         >
-          <span class="text-gray-700 dark:text-gray-200">Sonraki tahsilat</span>
+          <span class="text-gray-700 dark:text-gray-200">Geçerlilik</span>
           <span class="text-[11px] text-gray-500 dark:text-gray-400">
-            {{ new Date(license.currentPeriodEnd.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
-          </span>
-        </div>
-
-        <!-- CANCELED: erişim ne zaman biter -->
-        <div
-          v-else-if="license.isSubCanceled.value && license.currentPeriodEnd.value"
-          class="flex items-center justify-between text-sm"
-        >
-          <span class="text-gray-700 dark:text-gray-200">Erişim sonu</span>
-          <span class="text-[11px] text-gray-500 dark:text-gray-400">
-            {{ new Date(license.currentPeriodEnd.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+            {{ new Date(license.expiresAt.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
           </span>
         </div>
 
@@ -627,17 +573,7 @@ const notInSecureContext = computed(() => {
 
         <!-- Mevcut lisans aksiyonları -->
         <div v-else class="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
-          <!-- TRIAL: Aboneliği Başlat (vurgulu) -->
           <button
-            v-if="license.isSubTrial.value"
-            class="w-full px-3 py-2 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80"
-            @click="license.openCheckoutPage()"
-          >
-            💳 Aboneliği Başlat — 279 ₺/ay
-          </button>
-          <!-- ACTIVE / CANCELED: Yönet (web panele yönlendir) -->
-          <button
-            v-else-if="license.isSubActive.value || license.isSubCanceled.value || license.isSubPastDue.value"
             class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg active:opacity-80"
             @click="license.openCheckoutPage()"
           >

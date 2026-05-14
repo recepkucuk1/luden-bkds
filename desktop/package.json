@@ -1,6 +1,6 @@
 {
   "name": "brytakip-desktop",
-  "version": "0.1.0",
+  "version": "0.3.7",
   "description": "BRY Takip Desktop — Tauri uygulaması (backend + frontend gömülü)",
   "private": true,
   "type": "module",

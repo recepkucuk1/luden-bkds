@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import staticPlugin from '@fastify/static';
 import { prisma } from './lib/prisma.js';
 
@@ -67,6 +68,15 @@ await app.register(cors, {
   origin: true, // her origin'e izin (Tauri desktop app file://, tauri://localhost vb.)
   credentials: false,
   methods: ['GET', 'POST', 'OPTIONS'],
+});
+
+// Rate limit — public endpoint'leri brute-force/spam'e karşı korur. Global makul
+// bir taban; kritik route'lar (license verify, signup) kendi config'iyle daha sıkı.
+// trustProxy açık olduğu için req.ip Hostinger proxy arkasında gerçek istemci IP'si.
+await app.register(rateLimit, {
+  global: true,
+  max: 300,
+  timeWindow: '1 minute',
 });
 
 // Static — marketing/index.html, admin.html, asset'ler

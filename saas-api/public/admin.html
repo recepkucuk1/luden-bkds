@@ -144,7 +144,7 @@
       <div class="space-y-3">
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">Tutar (₺)</label>
-          <input id="paymentAmount" type="number" placeholder="299" step="0.01"
+          <input id="paymentAmount" type="number" placeholder="249" step="0.01"
                  class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono" />
         </div>
         <div>
@@ -353,7 +353,7 @@
       currentKurumId = kurumId;
       const k = kurumMap.get(kurumId);
       document.getElementById('paymentModalKurum').textContent = `${k.ad} (${k.plan})`;
-      document.getElementById('paymentAmount').value = k.plan === 'STANDART' ? '299' : k.plan === 'PRO' ? '599' : '0';
+      document.getElementById('paymentAmount').value = k.plan === 'STANDART' ? '249' : k.plan === 'PRO' ? '599' : '0';
       document.getElementById('paymentMethod').value = 'HAVALE';
       document.getElementById('paymentNotes').value = '';
       document.getElementById('paymentModal').classList.remove('hidden');
