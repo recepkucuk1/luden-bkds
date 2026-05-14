@@ -21,14 +21,14 @@ const { toTime } = useFormatters();
           : 'bg-gray-700 dark:bg-gray-600 text-white'
       "
     >
-      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-        <Icon :name="lastNotification.type === 'giriş' ? 'arrow-down-right' : 'arrow-up-right'" :size="16" />
+      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">
+        {{ lastNotification.type === 'giriş' ? '↘' : '↗' }}
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium truncate">
           {{ lastNotification.name }} {{ lastNotification.type }} yaptı
         </p>
-        <p class="text-xs opacity-80">{{ toTime(lastNotification.time) }}</p>
+        <p class="text-[11px] opacity-80">{{ toTime(lastNotification.time) }}</p>
       </div>
     </div>
   </Transition>

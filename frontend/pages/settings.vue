@@ -2,6 +2,7 @@
 const { backendUrl, wsConnected } = useBkds();
 const auth = useAuth();
 const updater = useUpdater();
+const autostart = useAutostart();
 const network = useNetworkInfo();
 const theme = useTheme();
 const license = useLicense();
@@ -233,7 +234,17 @@ onMounted(async () => {
 
   // Sürüm bilgisi (sadece Tauri içinde anlamlı)
   await updater.loadCurrentVersion();
+
+  // Auto-start durumu (Tauri içinde)
+  await autostart.refresh();
 });
+
+const onCheckUpdate = async () => {
+  const found = await updater.checkNow();
+  if (!found && updater.status.value === 'idle') {
+    // Banner göstermek için yapay durum tutmuyoruz; sadece test result yerine kısa metin
+  }
+};
 
 const onInstallUpdate = () => {
   updater.installNow();
@@ -423,10 +434,10 @@ const notInSecureContext = computed(() => {
           to="/"
           class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
         >
-          <Icon name="chevron-left" :size="22" />
+          ‹
         </NuxtLink>
         <div class="flex-1 min-w-0">
-          <p class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Ayarlar</p>
+          <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">Ayarlar</p>
           <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Bildirimler ve Bağlantı</h1>
         </div>
       </div>
@@ -434,20 +445,20 @@ const notInSecureContext = computed(() => {
 
     <!-- Bağlantı durumu -->
     <section class="mt-4 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium mb-2">
         BRY Bağlantısı
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5">
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">BRY sunucusu</span>
-          <span v-if="bryInfo" class="text-xs text-gray-500 dark:text-gray-400 truncate ml-2">
+          <span v-if="bryInfo" class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate ml-2">
             {{ bryInfo.baseUrl }}
           </span>
-          <span v-else class="text-xs text-amber-700 dark:text-amber-300">Yapılandırılmamış</span>
+          <span v-else class="text-[11px] text-amber-700 dark:text-amber-300">Yapılandırılmamış</span>
         </div>
         <div v-if="bryInfo" class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Kullanıcı adı</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 truncate ml-2">{{ bryInfo.username }}</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate ml-2">{{ bryInfo.username }}</span>
         </div>
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Canlı bağlantı (WebSocket)</span>
@@ -464,7 +475,7 @@ const notInSecureContext = computed(() => {
         </div>
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Backend adresi</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 truncate ml-2">{{ backendUrl }}</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate ml-2">{{ backendUrl }}</span>
         </div>
         <div class="pt-1">
           <NuxtLink
@@ -480,7 +491,7 @@ const notInSecureContext = computed(() => {
     <!-- BRY Takip Lisansı — sadece localhost'ta (Mac/Windows app); telefonda
          lisans kurum-bazlı yönetilir, Mac'ten girilir -->
     <section v-if="auth.isLocalhost()" class="mt-5 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
         BRY Takip Lisansı
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5">
@@ -496,7 +507,7 @@ const notInSecureContext = computed(() => {
           class="flex items-center justify-between text-sm"
         >
           <span class="text-gray-700 dark:text-gray-200">Geçerlilik</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="text-[11px] text-gray-500 dark:text-gray-400">
             {{ new Date(license.expiresAt.value).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
           </span>
         </div>
@@ -518,7 +529,7 @@ const notInSecureContext = computed(() => {
         </div>
         <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Anahtar</span>
-          <span class="text-xs font-mono text-gray-500 dark:text-gray-400 truncate ml-2">
+          <span class="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate ml-2">
             {{ license.status.value.key }}
           </span>
         </div>
@@ -528,7 +539,7 @@ const notInSecureContext = computed(() => {
           v-if="!license.status.value?.key || showLicenseEdit"
           class="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2"
         >
-          <label class="block text-xs text-gray-600 dark:text-gray-300">
+          <label class="block text-[11px] text-gray-600 dark:text-gray-300">
             Lisans Anahtarı
           </label>
           <input
@@ -539,7 +550,7 @@ const notInSecureContext = computed(() => {
             :disabled="licenseSubmitting"
             @keyup.enter="submitLicense"
           />
-          <p v-if="licenseError" class="text-xs text-red-600 dark:text-red-400">
+          <p v-if="licenseError" class="text-[11px] text-red-600 dark:text-red-400">
             {{ licenseError }}
           </p>
           <div class="flex gap-2">
@@ -589,7 +600,7 @@ const notInSecureContext = computed(() => {
         <!-- Açıklama (lisans yokken) -->
         <p
           v-if="!license.status.value?.key"
-          class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pt-2 border-t border-gray-200 dark:border-gray-700"
+          class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pt-2 border-t border-gray-200 dark:border-gray-700"
         >
           Lisans anahtarınız yoksa
           <a href="https://brytakip.com" target="_blank" class="text-brand underline">brytakip.com</a>
@@ -600,14 +611,14 @@ const notInSecureContext = computed(() => {
 
     <!-- Cihaz Eşleştirme (sadece Mac'te gösterilir, telefonda 403 olur) -->
     <section v-if="auth.isLocalhost() && pairCode" class="mt-5 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium mb-2">
         Cihaz Eşleştirme
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-3">
         <!-- Adım 1: telefondan açılacak adres -->
         <div>
-          <p class="text-xs text-gray-600 dark:text-gray-300 mb-1.5">
-            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand dark:bg-brand text-white text-[11px] font-semibold mr-1.5">1</span>
+          <p class="text-[11px] text-gray-600 dark:text-gray-300 mb-1.5">
+            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand dark:bg-brand text-white text-[10px] font-semibold mr-1.5">1</span>
             Telefonun tarayıcısında bu adrese gidin
           </p>
           <div
@@ -618,7 +629,7 @@ const notInSecureContext = computed(() => {
           </div>
           <div
             v-else
-            class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 rounded-lg px-3 py-2"
+            class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-lg px-3 py-2"
           >
             Ağ bilgisi alınıyor...
           </div>
@@ -626,11 +637,11 @@ const notInSecureContext = computed(() => {
             v-if="network.urls.value.length > 1"
             class="mt-1 space-y-0.5"
           >
-            <p class="text-[11px] text-gray-500 dark:text-gray-400">Alternatif adresler:</p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">Alternatif adresler:</p>
             <div
               v-for="alt in network.urls.value.slice(1)"
               :key="alt"
-              class="font-mono text-xs text-gray-600 dark:text-gray-300 select-all break-all"
+              class="font-mono text-[11px] text-gray-600 dark:text-gray-300 select-all break-all"
             >
               {{ alt }}
             </div>
@@ -639,9 +650,9 @@ const notInSecureContext = computed(() => {
           <!-- Windows Firewall uyarısı — sadece Windows Tauri'de -->
           <div
             v-if="network.isWindowsTauri.value"
-            class="mt-2 text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
+            class="mt-2 text-[11px] text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
           >
-            <p class="font-medium mb-0.5 inline-flex items-center gap-1"><Icon name="triangle-alert" :size="14" />Windows Firewall</p>
+            <p class="font-medium mb-0.5">⚠ Windows Firewall</p>
             <p>
               Telefon bağlanamıyorsa Firewall blokluyor olabilir. Başlat →
               <strong>Windows Defender Güvenlik Duvarı</strong> → "Bir uygulamaya izin ver" → listede
@@ -653,8 +664,8 @@ const notInSecureContext = computed(() => {
 
         <!-- Adım 2: pair code -->
         <div>
-          <p class="text-xs text-gray-600 dark:text-gray-300 mb-1.5">
-            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand dark:bg-brand text-white text-[11px] font-semibold mr-1.5">2</span>
+          <p class="text-[11px] text-gray-600 dark:text-gray-300 mb-1.5">
+            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand dark:bg-brand text-white text-[10px] font-semibold mr-1.5">2</span>
             Telefonda bu kodu girin
           </p>
           <div
@@ -668,7 +679,7 @@ const notInSecureContext = computed(() => {
           <span>Kayıtlı cihaz</span>
           <span class="font-medium">{{ deviceCount ?? '–' }}</span>
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">
           Aynı kod 10 dakika boyunca birden çok telefonu eşleştirmek için kullanılabilir.
           10 dakika sonra ya da "Kodu yenile" tıklayınca yenisi üretilir.
         </p>
@@ -695,7 +706,7 @@ const notInSecureContext = computed(() => {
 
     <!-- Görünüm (her platformda gösterilir — kullanıcı görsel tercihi) -->
     <section class="mt-5 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
         Görünüm
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
@@ -719,7 +730,7 @@ const notInSecureContext = computed(() => {
             {{ opt.label }}
           </button>
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
           "Sistem" işletim sistemi tercihinizi izler (iPhone Light/Dark, macOS
           Görünüm, Windows tema). "Aydınlık" veya "Karanlık" seçerseniz
           uygulama hep o modda kalır.
@@ -727,22 +738,53 @@ const notInSecureContext = computed(() => {
       </div>
     </section>
 
-    <!-- Sürüm + otomatik güncelleme (sadece Tauri içinde) -->
+    <!-- Sürüm + Auto-update + Auto-start (sadece Tauri içinde) -->
     <section v-if="updater.isInTauri()" class="mt-5 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium mb-2">
         Uygulama
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5">
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Sürüm</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+          <span class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 font-mono">
             {{ updater.currentVersion.value ?? '–' }}
           </span>
         </div>
 
+        <!-- Auto-start toggle -->
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex-1 min-w-0">
+            <p class="text-gray-700 dark:text-gray-200">Bilgisayar açılınca otomatik başlat</p>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5 leading-relaxed">
+              Açıkken Mac restart sonrası uygulama arka planda kendiliğinden başlar.
+              Pencere kapalı kalır, tray ikonundan açabilirsiniz.
+            </p>
+          </div>
+          <button
+            class="ml-3 relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0
+                   disabled:opacity-50"
+            :class="autostart.enabled.value ? 'bg-brand dark:bg-brand' : 'bg-gray-300'"
+            :disabled="autostart.busy.value || autostart.enabled.value === null"
+            @click="autostart.toggle()"
+            :aria-label="autostart.enabled.value ? 'Kapat' : 'Aç'"
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-900 transition-transform"
+              :class="autostart.enabled.value ? 'translate-x-6' : 'translate-x-1'"
+            />
+          </button>
+        </div>
+
+        <p
+          v-if="autostart.errorMsg.value"
+          class="text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-lg p-2"
+        >
+          {{ autostart.errorMsg.value }}
+        </p>
+
         <div v-if="updater.updateAvailable.value" class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Yeni sürüm</span>
-          <span class="text-xs text-brand dark:text-brand-400 font-medium">
+          <span class="text-[11px] text-brand dark:text-brand-400 font-medium">
             {{ updater.updateAvailable.value.version }}
           </span>
         </div>
@@ -751,8 +793,9 @@ const notInSecureContext = computed(() => {
           {{ updater.errorMsg.value }}
         </div>
 
-        <div v-if="updater.updateAvailable.value" class="flex flex-wrap gap-2 pt-1">
+        <div class="flex flex-wrap gap-2 pt-1">
           <button
+            v-if="updater.updateAvailable.value"
             class="px-3 py-1.5 bg-brand dark:bg-brand text-white text-xs font-medium rounded-lg active:opacity-80
                    disabled:opacity-50"
             :disabled="updater.status.value === 'downloading'"
@@ -760,20 +803,28 @@ const notInSecureContext = computed(() => {
           >
             {{ updater.status.value === 'downloading' ? 'İndiriliyor...' : 'Şimdi güncelle' }}
           </button>
+          <button
+            class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-lg active:opacity-80
+                   disabled:opacity-50"
+            :disabled="updater.status.value === 'checking' || updater.status.value === 'downloading'"
+            @click="onCheckUpdate"
+          >
+            {{ updater.status.value === 'checking' ? 'Kontrol ediliyor...' : 'Güncelleme kontrol et' }}
+          </button>
         </div>
 
         <p
           v-if="updater.status.value === 'idle' && !updater.updateAvailable.value && !updater.errorMsg.value"
-          class="text-xs text-gray-500 dark:text-gray-400"
+          class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500"
         >
-          Güncellemeler arkaplanda otomatik kontrol edilir, yeni sürüm çıkınca burada bildirilir.
+          Güncellemeler arkaplanda kontrol edilir, yeni sürüm çıkınca burada bildirilir.
         </p>
       </div>
     </section>
 
     <!-- Bildirim durumu -->
     <section class="mt-5 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium mb-2">
         Yerel Bildirim
       </h2>
 
@@ -786,18 +837,18 @@ const notInSecureContext = computed(() => {
         <p class="text-sm text-gray-700 dark:text-gray-200 font-medium">
           Kilit ekranı bildirimi şu an aktif değil
         </p>
-        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+        <p class="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
           Modern tarayıcılar (Safari, Chrome, vb.) güvenli bağlantı (HTTPS)
           olmayan adreslerde bildirim göndermez. Bu uygulamaya yerel ağ üzerinden
           HTTP ile bağlandığınız için tarayıcı bildirim iznini sessizce reddediyor —
           bu uygulama tarafından değil, tarayıcı tarafından konulan bir kısıtlamadır.
         </p>
-        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+        <p class="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
           <strong class="text-gray-700 dark:text-gray-200">Bunun yerine:</strong> uygulama açıkken
           yeni giriş-çıkış olduğunda ekranın üstüne <strong>canlı bildirim banner'ı</strong>
           düşer. Telefon kilitliyken veya uygulama kapalıyken bildirim gelmez.
         </p>
-        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+        <p class="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
           <strong class="text-gray-700 dark:text-gray-200">Tam bildirim takibi için</strong> bilgisayardaki
           BRY Takip uygulamasını kullanın — kilit ekranı dahil her durumda bildirim
           gönderir.
@@ -822,10 +873,10 @@ const notInSecureContext = computed(() => {
 
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">İzin durumu</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ permission }}</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{{ permission }}</span>
         </div>
 
-        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">
           Bildirimler yalnızca yerel ağda çalışır. Veriniz kurum dışına çıkmaz;
           Apple veya Google sunucuları kullanılmaz. Telefon kurum WiFi'sinden
           ayrıldığında bildirim gelmez.
@@ -840,7 +891,7 @@ const notInSecureContext = computed(() => {
           v-if="context === 'ios-safari'"
           class="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2.5 leading-relaxed"
         >
-          <p class="font-medium mb-1 inline-flex items-center gap-1"><Icon name="triangle-alert" :size="14" />Safari modundasınız</p>
+          <p class="font-medium mb-1">⚠ Safari modundasınız</p>
           <p>
             iPhone'da bildirim almak için bu sayfayı <strong>Ana Ekrana Ekle</strong>menizgerekir.
             Safari'nin paylaş düğmesine basın → <strong>"Ana Ekrana Ekle"</strong> → ana ekrandaki
@@ -928,20 +979,41 @@ const notInSecureContext = computed(() => {
           </button>
         </div>
 
-        <p v-if="testResult" class="text-xs text-gray-600 dark:text-gray-300">{{ testResult }}</p>
+        <p v-if="testResult" class="text-[11px] text-gray-600 dark:text-gray-300">{{ testResult }}</p>
+      </div>
+    </section>
+
+    <!-- Cihaz bilgisi (debug) -->
+    <section class="mt-5 px-4">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium mb-2">
+        Cihaz
+      </h2>
+      <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
+        <div class="flex justify-between">
+          <span>Platform</span>
+          <span>{{ isIos ? 'iOS' : (typeof navigator !== 'undefined' ? navigator.platform : '–') }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>PWA modu</span>
+          <span>{{ isPwa ? 'Evet' : 'Hayır (tarayıcı)' }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Service Worker</span>
+          <span>{{ supported ? 'Destekleniyor' : 'Desteklenmiyor' }}</span>
+        </div>
       </div>
     </section>
 
     <!-- Yardım / Tanılama (sadece Mac/PC localhost'ta gösterilir) -->
     <section v-if="auth.isLocalhost()" class="mt-5 px-4">
-      <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium mb-2">
         Sistem Durumu
       </h2>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2.5 text-xs">
         <!-- BRY bağlantısı -->
         <div class="flex items-center justify-between">
           <span class="text-gray-700 dark:text-gray-200">BRY bağlantısı</span>
-          <span v-if="pollingStatusText" class="px-2 py-0.5 rounded-full text-[11px] font-medium"
+          <span v-if="pollingStatusText" class="px-2 py-0.5 rounded-full text-[10px] font-medium"
             :class="{
               'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200': pollingStatusText.tone === 'green',
               'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200': pollingStatusText.tone === 'amber',
@@ -950,11 +1022,11 @@ const notInSecureContext = computed(() => {
           >
             {{ pollingStatusText.text }}
           </span>
-          <span v-else class="text-gray-500 dark:text-gray-400">…</span>
+          <span v-else class="text-gray-400 dark:text-gray-500">…</span>
         </div>
 
         <!-- Son başarılı senkronizasyon -->
-        <div v-if="diagnostics?.polling.lastSuccessAt" class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
+        <div v-if="diagnostics?.polling.lastSuccessAt" class="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300">
           <span>Son başarılı senkronizasyon</span>
           <span>{{ formatRelative(diagnostics.polling.lastSuccessAt) }}</span>
         </div>
@@ -962,14 +1034,14 @@ const notInSecureContext = computed(() => {
         <!-- Hata varsa kısa mesaj -->
         <div
           v-if="diagnostics?.polling.isInBackoff && diagnostics?.polling.lastErrorMessage"
-          class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
+          class="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
         >
           <p class="font-medium mb-0.5">Son hata</p>
           <p>{{ diagnostics.polling.lastErrorMessage }}</p>
         </div>
 
         <!-- Uygulama bilgisi -->
-        <div v-if="diagnostics" class="pt-1 border-t border-gray-200 dark:border-gray-700 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+        <div v-if="diagnostics" class="pt-1 border-t border-gray-200 dark:border-gray-700 space-y-1 text-[11px] text-gray-600 dark:text-gray-300">
           <div class="flex justify-between">
             <span>Çalışma süresi</span>
             <span>{{ Math.floor(diagnostics.app.backendUptimeSec / 60) }} dk</span>
@@ -996,15 +1068,15 @@ const notInSecureContext = computed(() => {
 
           <div v-else class="space-y-2">
             <div class="flex items-center justify-between">
-              <p class="text-xs font-medium text-gray-700 dark:text-gray-200">Son 200 satır</p>
+              <p class="text-[11px] font-medium text-gray-700 dark:text-gray-200">Son 200 satır</p>
               <button
-                class="text-xs text-gray-500 dark:text-gray-400 underline"
+                class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 underline"
                 @click="closeLogViewer"
               >
                 Kapat
               </button>
             </div>
-            <pre class="text-[11px] font-mono bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-64 overflow-auto whitespace-pre-wrap break-words leading-snug"
+            <pre class="text-[10px] font-mono bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-64 overflow-auto whitespace-pre-wrap break-words leading-snug"
             >{{ logLines.join('\n') }}</pre>
             <div class="flex gap-2 items-center">
               <button
@@ -1013,7 +1085,7 @@ const notInSecureContext = computed(() => {
               >
                 {{ copyState === 'copied' ? '✓ Kopyalandı' : (copyState === 'error' ? 'Hata' : 'Tümünü kopyala') }}
               </button>
-              <span class="text-[11px] text-gray-500 dark:text-gray-400">
+              <span class="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 Sorun bildirirken bu metni paylaşın.
               </span>
             </div>
@@ -1022,7 +1094,7 @@ const notInSecureContext = computed(() => {
       </div>
     </section>
 
-    <p class="text-center text-[11px] text-gray-500 dark:text-gray-400 mt-6 px-4">
+    <p class="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-6 px-4">
       Bildirimler için Mac'in açık olması ve telefonun kurum WiFi'sinde olması gerekir.
     </p>
   </div>

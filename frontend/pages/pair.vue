@@ -45,7 +45,7 @@ const submit = async () => {
 <template>
   <div class="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
     <header class="bg-brand text-white px-4 py-5 pt-[max(env(safe-area-inset-top),1.25rem)]">
-      <p class="text-[11px] uppercase tracking-wider text-white/70">Cihaz Eşleştirme</p>
+      <p class="text-[10px] uppercase tracking-wider text-white/70">Cihaz Eşleştirme</p>
       <h1 class="text-lg font-semibold">Kodu girin</h1>
       <p class="text-sm text-white/85 mt-2 leading-relaxed">
         Bilgisayardaki BRY Takip uygulamasının ayarlar ekranında gösterilen
@@ -86,7 +86,7 @@ const submit = async () => {
         {{ status === 'submitting' ? 'Doğrulanıyor...' : 'Eşleştir' }}
       </button>
 
-      <div class="pt-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-100 dark:border-gray-800 mt-6">
+      <div class="pt-4 text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed border-t border-gray-100 dark:border-gray-800 mt-6">
         <p class="font-medium text-gray-700 dark:text-gray-200 mb-1">Kod nereden alınır?</p>
         <p>
           Bilgisayardaki BRY Takip uygulamasını açın → Ayarlar →

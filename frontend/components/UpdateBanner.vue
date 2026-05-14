@@ -39,7 +39,7 @@ const visible = computed(() => {
           </p>
           <template v-else-if="status === 'error'">
             <p class="text-sm font-medium">Güncelleme başarısız</p>
-            <p class="text-xs text-white/80 mt-0.5">{{ errorMsg }}</p>
+            <p class="text-[11px] text-white/80 mt-0.5">{{ errorMsg }}</p>
           </template>
           <template v-else-if="updateAvailable">
             <p class="text-sm font-medium">
@@ -47,7 +47,7 @@ const visible = computed(() => {
             </p>
             <p
               v-if="updateAvailable.notes"
-              class="text-xs text-white/80 mt-0.5 line-clamp-2"
+              class="text-[11px] text-white/80 mt-0.5 line-clamp-2"
             >
               {{ updateAvailable.notes }}
             </p>

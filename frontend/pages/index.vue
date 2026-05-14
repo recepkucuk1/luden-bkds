@@ -104,42 +104,6 @@ const cameraWarning = computed(() => {
   if (m >= 15) return `${m} dk okuma yok`;
   return null;
 });
-
-// Durum şeridi — aynı anda tek uyarı gösterir (öncelik: veri hatası > kamera).
-// Lisans hataları zaten yukarıdaki tam ekran modalla ele alınır, burada tekrarlanmaz.
-type StatusAction =
-  | { kind: 'retry'; label: string }
-  | { kind: 'link'; label: string; to: string };
-
-interface StatusBanner {
-  tone: 'red' | 'amber';
-  title: string;
-  detail: string;
-  actions: StatusAction[];
-}
-
-const statusBanner = computed<StatusBanner | null>(() => {
-  if (error.value) {
-    return {
-      tone: 'red',
-      title: 'Veriler yüklenemedi',
-      detail: error.value,
-      actions: [
-        { kind: 'retry', label: 'Tekrar dene' },
-        { kind: 'link', label: 'Sistem durumu', to: '/settings' },
-      ],
-    };
-  }
-  if (cameraWarning.value) {
-    return {
-      tone: 'amber',
-      title: cameraWarning.value,
-      detail: 'Kameraları kontrol et',
-      actions: [],
-    };
-  }
-  return null;
-});
 </script>
 
 <template>
@@ -155,8 +119,8 @@ const statusBanner = computed<StatusBanner | null>(() => {
     >
       <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl">
         <div class="flex items-center gap-3 mb-3">
-          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 flex items-center justify-center">
-            <Icon name="ban" :size="22" />
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 flex items-center justify-center text-xl">
+            ⛔
           </div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Uygulama Kullanılamaz
@@ -194,7 +158,7 @@ const statusBanner = computed<StatusBanner | null>(() => {
             {{ license.verifying.value ? 'Kontrol ediliyor...' : 'Tekrar dene' }}
           </button>
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-4 text-center">
           Sorun varsa: <a href="mailto:info@brytakip.com" class="underline">info@brytakip.com</a>
         </p>
       </div>
@@ -203,34 +167,65 @@ const statusBanner = computed<StatusBanner | null>(() => {
     <LiveNotification />
     <UpdateBanner />
 
-    <!-- Durum şeridi — 3 ayrı banner yerine tek öncelikli uyarı alanı.
-         Lisans hataları yukarıdaki tam ekran modalla ele alınıyor. -->
-    <div
-      v-if="statusBanner"
-      class="mx-4 mt-3 p-3 rounded-xl text-sm"
-      :class="statusBanner.tone === 'red'
-        ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
-        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200'"
+    <!-- Lisans uyarısı — yalnızca localhost'ta (Mac/Win app);
+         telefonda lisans state'i ayrı, banner orada anlamsız. -->
+    <NuxtLink
+      v-if="
+        auth.isLocalhost()
+          && license.status.value?.key
+          && (license.isExpired.value
+              || license.isRevoked.value
+              || license.isWrongMachine.value
+              || license.isInvalid.value)
+      "
+      to="/settings"
+      class="block mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm active:opacity-80"
     >
-      <p class="font-medium">{{ statusBanner.title }}</p>
-      <p class="text-xs mt-0.5 opacity-80 leading-relaxed">{{ statusBanner.detail }}</p>
-      <div v-if="statusBanner.actions.length" class="flex items-center gap-3 mt-2">
-        <template v-for="a in statusBanner.actions" :key="a.label">
-          <button
-            v-if="a.kind === 'retry'"
-            class="px-3 py-1 bg-white dark:bg-gray-800 rounded-lg text-xs font-medium border border-red-200 dark:border-red-900 active:opacity-80"
-            @click="fetchSnapshot()"
-          >
-            {{ a.label }}
-          </button>
-          <NuxtLink v-else :to="a.to" class="text-xs underline opacity-90">
-            {{ a.label }} →
-          </NuxtLink>
-        </template>
+      <p class="font-medium">
+        {{
+          license.isExpired.value
+            ? 'Lisans süresi doldu'
+            : license.isRevoked.value
+              ? 'Lisans iptal edilmiş'
+              : license.isWrongMachine.value
+                ? 'Lisans başka bir cihaza bağlı'
+                : 'Lisans geçersiz'
+        }}
+      </p>
+      <p class="text-[11px] mt-0.5 opacity-80">brytakip.com'dan lisansı yenile veya iletişime geç</p>
+    </NuxtLink>
+
+    <div v-if="error" class="mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm">
+      <p class="font-medium">Veriler yüklenemedi</p>
+      <p class="text-[11px] mt-0.5 opacity-80 leading-relaxed">{{ error }}</p>
+      <div class="flex items-center gap-2 mt-2">
+        <button
+          class="px-3 py-1 bg-white dark:bg-gray-800 rounded-lg text-xs font-medium border border-red-200 dark:border-red-900 active:bg-red-50 dark:active:bg-red-950/60"
+          @click="fetchSnapshot()"
+        >
+          Tekrar dene
+        </button>
+        <NuxtLink
+          to="/settings"
+          class="text-[11px] text-red-700 dark:text-red-300 underline"
+        >
+          Sistem durumuna bak →
+        </NuxtLink>
       </div>
     </div>
 
     <StatsCards />
+
+    <div
+      v-if="cameraWarning"
+      class="mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 flex items-start gap-2.5"
+    >
+      <span class="text-amber-600 dark:text-amber-400 text-base leading-none mt-0.5">⚠</span>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-amber-800 dark:text-amber-200">{{ cameraWarning }}</p>
+        <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">Kameraları kontrol et</p>
+      </div>
+    </div>
 
     <div class="px-4 mt-4">
       <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs">
@@ -261,23 +256,23 @@ const statusBanner = computed<StatusBanner | null>(() => {
     <template v-else-if="snapshot">
       <section class="mt-4">
         <div class="px-4 flex items-center justify-between mb-2">
-          <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
+          <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
             Bugün
           </h2>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ filteredList.length }} kişi</span>
+          <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ filteredList.length }} kişi</span>
         </div>
         <!-- Empty state — başlangıçta veya kategori boşken -->
         <div
           v-if="filteredList.length === 0"
           class="mx-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"
         >
-          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-500">
-            <Icon name="inbox" :size="24" />
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-xl text-gray-300 dark:text-gray-500">
+            ⌀
           </div>
           <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
             Bu kategoride henüz kayıt yok
           </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+          <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
             BRY kameralarınızdan ilk hareket geldiğinde burada görünecek.
           </p>
         </div>
@@ -294,7 +289,7 @@ const statusBanner = computed<StatusBanner | null>(() => {
         </div>
       </section>
 
-      <p class="text-center text-[11px] text-gray-500 dark:text-gray-400 mt-6">
+      <p class="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-6">
         Son güncelleme: {{ relative(snapshot.generatedAt) }}
       </p>
     </template>

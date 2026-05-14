@@ -142,8 +142,8 @@ const stepNumber = computed(() => {
       >
         <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
           <div class="px-5 py-8 text-center">
-            <div class="w-20 h-20 rounded-2xl bg-white/15 mx-auto flex items-center justify-center mb-4">
-              <Icon name="arrow-down-right" :size="44" />
+            <div class="w-20 h-20 rounded-2xl bg-white/15 mx-auto flex items-center justify-center text-4xl mb-4">
+              ↘
             </div>
             <h1 class="text-2xl font-semibold">BRY Takip</h1>
             <p class="text-sm text-white/85 mt-1">
@@ -183,7 +183,7 @@ const stepNumber = computed(() => {
             </div>
           </div>
 
-          <p class="text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed bg-gray-50 dark:bg-gray-800 rounded-xl p-3 mb-6">
+          <p class="text-[12px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed bg-gray-50 dark:bg-gray-800 rounded-xl p-3 mb-6">
             Kurulum yaklaşık <strong class="text-gray-700 dark:text-gray-200">2 dakika</strong>, bir
             kerelik. BRY sunucu adresi ve giriş bilgilerinize ihtiyaç olacak.
           </p>
@@ -214,7 +214,7 @@ const stepNumber = computed(() => {
               aria-label="Geri"
               @click="goBack"
             >
-              <Icon name="chevron-left" :size="22" />
+              ‹
             </button>
             <NuxtLink
               v-else
@@ -222,10 +222,10 @@ const stepNumber = computed(() => {
               class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
               aria-label="İptal"
             >
-              <Icon name="chevron-left" :size="22" />
+              ‹
             </NuxtLink>
             <div class="flex-1 min-w-0">
-              <p class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 {{ isEdit ? 'Düzenleme' : `Adım ${stepNumber}/2` }}
               </p>
               <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Sunucu adresi</h1>
@@ -262,7 +262,7 @@ const stepNumber = computed(() => {
             @keyup.enter="isValidUrl && (currentStep = 'credentials')"
           />
 
-          <div class="mt-3 text-xs text-gray-600 dark:text-gray-300 leading-relaxed bg-amber-50 dark:bg-amber-950/40 rounded-lg p-3">
+          <div class="mt-3 text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed bg-amber-50 dark:bg-amber-950/40 rounded-lg p-3">
             <p class="font-medium text-amber-900 dark:text-amber-200 mb-1">Bilmiyor musunuz?</p>
             <p class="text-amber-800 dark:text-amber-200">
               Kurumdaki INNOVA cihazını teknik olarak kuran kişiden öğrenin —
@@ -298,10 +298,10 @@ const stepNumber = computed(() => {
               aria-label="Geri"
               @click="goBack"
             >
-              <Icon name="chevron-left" :size="22" />
+              ‹
             </button>
             <div class="flex-1 min-w-0">
-              <p class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 {{ isEdit ? 'Düzenleme' : `Adım ${stepNumber}/2` }}
               </p>
               <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Giriş bilgileri</h1>
@@ -352,7 +352,7 @@ const stepNumber = computed(() => {
                        focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white dark:bg-gray-900"
                 @keyup.enter="submitCredentials"
               />
-              <p v-if="isEdit" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p v-if="isEdit" class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                 Güvenlik için mevcut şifre gösterilmez. Yeniden girin.
               </p>
             </div>
@@ -365,7 +365,7 @@ const stepNumber = computed(() => {
             {{ errorMsg }}
           </div>
 
-          <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+          <div class="mt-3 text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">
             Bu bilgiler bilgisayarınızda macOS Keychain (Mac) ya da güvenli
             kayıtta saklanır. Kurum dışına çıkmaz.
           </div>
@@ -391,8 +391,8 @@ const stepNumber = computed(() => {
       >
         <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
           <div class="px-5 py-8 text-center">
-            <div class="w-20 h-20 rounded-full bg-white/15 mx-auto flex items-center justify-center mb-4">
-              <Icon name="check" :size="44" />
+            <div class="w-20 h-20 rounded-full bg-white/15 mx-auto flex items-center justify-center text-4xl mb-4">
+              ✓
             </div>
             <h1 class="text-2xl font-semibold">Hazırsınız</h1>
             <p class="text-sm text-white/85 mt-1">
@@ -416,7 +416,7 @@ const stepNumber = computed(() => {
             </p>
 
             <div v-if="network.primaryUrl.value">
-              <p class="text-xs text-gray-600 dark:text-gray-300 mb-1">
+              <p class="text-[11px] text-gray-600 dark:text-gray-300 mb-1">
                 <strong class="text-gray-700 dark:text-gray-200">1.</strong>
                 Telefonun tarayıcısında bu adrese gidin:
               </p>
@@ -426,7 +426,7 @@ const stepNumber = computed(() => {
             </div>
 
             <div v-if="pairCode">
-              <p class="text-xs text-gray-600 dark:text-gray-300 mb-1">
+              <p class="text-[11px] text-gray-600 dark:text-gray-300 mb-1">
                 <strong class="text-gray-700 dark:text-gray-200">2.</strong>
                 Telefonda bu kodu girin:
               </p>
@@ -435,14 +435,14 @@ const stepNumber = computed(() => {
               </div>
             </div>
 
-            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">
               Telefon kurum WiFi'sinde olmalı. Kod 10 dakika geçerli; yenisi
               gerekirse Ayarlar → Cihaz Eşleştirme.
             </p>
 
             <p
               v-if="network.isWindowsTauri.value"
-              class="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
+              class="text-[11px] text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-lg p-2 leading-relaxed"
             >
               <strong>Windows kullanıyorsanız:</strong> ilk açılışta Windows
               Firewall <strong>"brytakip-backend ağa erişim istiyor"</strong> sorusu
@@ -454,8 +454,8 @@ const stepNumber = computed(() => {
           <!-- Diğer ipuçları -->
           <div class="space-y-3 mb-6">
             <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand flex items-center justify-center flex-shrink-0">
-                <Icon name="bell" :size="15" />
+              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                ◐
               </span>
               <div>
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Bildirimleri açın</p>
@@ -467,8 +467,8 @@ const stepNumber = computed(() => {
             </div>
 
             <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand flex items-center justify-center flex-shrink-0">
-                <Icon name="rotate-cw" :size="15" />
+              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                ⟲
               </span>
               <div>
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Otomatik çalışma</p>
