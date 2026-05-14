@@ -133,9 +133,14 @@ export const useLicense = () => {
    */
   const openCheckoutPage = async () => {
     const email = status.value?.kurumEmail ?? '';
-    const url = email
-      ? `https://brytakip.com/?email=${encodeURIComponent(email)}#/panel`
-      : 'https://brytakip.com/#/signup';
+    const key = status.value?.key ?? '';
+    let url = 'https://brytakip.com/#/signup';
+    if (email) {
+      // lk: panel status çağrısında kimlik kanıtı — kurum PII + lisans anahtarı erişimini açar
+      const qs = new URLSearchParams({ email });
+      if (key) qs.set('lk', key);
+      url = `https://brytakip.com/?${qs.toString()}#/panel`;
+    }
 
     if (typeof window === 'undefined') return;
     const isInTauri = '__TAURI_INTERNALS__' in window || '__TAURI__' in window;
@@ -268,8 +273,8 @@ export const useLicense = () => {
   const isSubPastDue = computed(() => subStatus.value === 'PAST_DUE');
   const isSubscriptionInvalid = computed(() => status.value?.status === 'SUBSCRIPTION_INVALID');
 
-  /** App fiilen kullanılabilir mi? License OK + subscription pencerede. */
-  const isUsable = computed(() => isActive.value || isPending.value);
+  // Uygulamanın fiilen kullanılabilir/blokeli olup olmadığı `isBlocked` ile
+  // belirlenir (aşağıda). PENDING lisans + geçerli abonelik bloke değildir.
 
   const expiresAt = computed(() => status.value?.expiresAt ?? null);
   const trialEndsAt = computed(() => status.value?.trialEndsAt ?? null);
@@ -334,7 +339,6 @@ export const useLicense = () => {
     isRevoked,
     isWrongMachine,
     isInvalid,
-    isUsable,
     // Subscription flags
     subStatus,
     isSubTrial,
