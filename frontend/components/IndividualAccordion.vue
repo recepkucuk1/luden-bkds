@@ -111,19 +111,19 @@ const proxyPhoto = photoUrl;
         <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
           {{ individual.full_name }}
         </p>
-        <div class="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">
+        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 mt-0.5">
           <template v-if="firstEntry">
-            <span class="text-brand dark:text-brand-400 font-medium">↘ {{ toTime(firstEntry) }}</span>
-            <span class="text-gray-400 dark:text-gray-500">→</span>
+            <span class="text-brand dark:text-brand-400 font-medium inline-flex items-center gap-0.5"><Icon name="arrow-down-right" :size="13" />{{ toTime(firstEntry) }}</span>
+            <span class="text-gray-500 dark:text-gray-400">→</span>
             <span
               v-if="lastExit"
-              class="text-gray-700 dark:text-gray-200"
-            >↗ {{ toTime(lastExit) }}</span>
+              class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"
+            ><Icon name="arrow-up-right" :size="13" />{{ toTime(lastExit) }}</span>
             <span
               v-else-if="lastActivity"
-              class="text-gray-700 dark:text-gray-200"
-            >↗ {{ toTime(lastActivity.activity_time) }}</span>
-            <span class="text-gray-400 dark:text-gray-500">·</span>
+              class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"
+            ><Icon name="arrow-up-right" :size="13" />{{ toTime(lastActivity.activity_time) }}</span>
+            <span class="text-gray-500 dark:text-gray-400">·</span>
             <span class="font-medium">{{ formatDuration(totalMinutes) }}</span>
           </template>
           <template v-else>
@@ -138,15 +138,15 @@ const proxyPhoto = photoUrl;
         class="flex flex-col items-end flex-shrink-0"
       >
         <span
-          class="text-[10px] px-2 py-0.5 rounded-md font-semibold"
+          class="text-[11px] px-2 py-0.5 rounded-md font-semibold"
           :class="lessonBadgeClass"
         >
           {{ lessonInfo.lessons }} DERS
         </span>
       </div>
 
-      <div class="text-gray-400 dark:text-gray-500 text-xs ml-1 flex-shrink-0">
-        {{ isOpen ? '▲' : '▼' }}
+      <div class="text-gray-500 dark:text-gray-400 ml-1 flex-shrink-0">
+        <Icon name="chevron-down" :size="16" class="transition-transform" :class="isOpen ? 'rotate-180' : ''" />
       </div>
     </button>
 
@@ -205,30 +205,30 @@ const proxyPhoto = photoUrl;
                 {{ act.activity_type === 'entry' ? 'Giriş' : 'Çıkış' }}
                 <span
                   v-if="act.is_matched_manually"
-                  class="ml-1 text-[10px] text-amber-700 dark:text-amber-300"
+                  class="ml-1 text-[11px] text-amber-700 dark:text-amber-300"
                 >
                   (manuel)
                 </span>
               </p>
-              <p class="text-[11px] text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ toTime(act.activity_time) }}
               </p>
             </div>
             <div
-              class="text-sm flex-shrink-0"
+              class="flex-shrink-0"
               :class="
                 act.activity_type === 'entry'
                   ? 'text-brand dark:text-brand-400'
-                  : 'text-gray-400 dark:text-gray-500'
+                  : 'text-gray-500 dark:text-gray-400'
               "
             >
-              {{ act.activity_type === 'entry' ? '↘' : '↗' }}
+              <Icon :name="act.activity_type === 'entry' ? 'arrow-down-right' : 'arrow-up-right'" :size="16" />
             </div>
           </div>
 
           <NuxtLink
             :to="`/individual/${individual.uuid}`"
-            class="block text-center text-[11px] text-gray-500 dark:text-gray-400 underline mt-2 py-1"
+            class="block text-center text-xs text-gray-500 dark:text-gray-400 underline mt-2 py-1"
           >
             Tüm bilgiler →
           </NuxtLink>

@@ -29,15 +29,15 @@ const isEntry = computed(() => props.type === 'entry');
     </div>
     <div class="flex-1 min-w-0">
       <p class="text-sm font-medium text-gray-900 truncate">{{ name }}</p>
-      <p class="text-[11px] text-gray-500">
+      <p class="text-xs text-gray-500">
         {{ toTime(time) }} · {{ isEntry ? 'Giriş' : 'Çıkış' }}
       </p>
     </div>
     <div
-      class="text-lg flex-shrink-0"
+      class="flex-shrink-0"
       :class="isEntry ? 'text-brand' : 'text-gray-400'"
     >
-      {{ isEntry ? '↘' : '↗' }}
+      <Icon :name="isEntry ? 'arrow-down-right' : 'arrow-up-right'" :size="18" />
     </div>
   </NuxtLink>
 </template>

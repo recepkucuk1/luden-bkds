@@ -21,7 +21,7 @@ onUnmounted(() => clearInterval(timer));
   <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 pt-[env(safe-area-inset-top)]">
     <div class="px-4 py-3 flex items-center justify-between">
       <div>
-        <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">BRY Takip</p>
+        <p class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">BRY Takip</p>
         <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Anlık Durum</h1>
       </div>
       <div class="flex items-center gap-3">

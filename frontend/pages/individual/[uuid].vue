@@ -60,17 +60,17 @@ const proxyPhoto = photoUrl;
           to="/"
           class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
         >
-          ‹
+          <Icon name="chevron-left" :size="22" />
         </NuxtLink>
         <div class="flex-1 min-w-0">
-          <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">Birey</p>
+          <p class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Birey</p>
           <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
             {{ data?.individual?.full_name ?? '...' }}
           </h1>
         </div>
         <span
           v-if="data?.individual"
-          class="text-[11px] px-2 py-1 rounded-full"
+          class="text-xs px-2 py-1 rounded-full"
           :class="
             isPresent
               ? 'bg-brand-50 text-brand'
@@ -104,7 +104,7 @@ const proxyPhoto = photoUrl;
           <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
             {{ showDetails ? 'Detayları gizle' : 'Detayları göster' }}
           </span>
-          <span class="text-gray-400 dark:text-gray-500">{{ showDetails ? '−' : '+' }}</span>
+          <span class="text-gray-500 dark:text-gray-400">{{ showDetails ? '−' : '+' }}</span>
         </button>
         <Transition
           enter-active-class="transition duration-200"
@@ -116,25 +116,25 @@ const proxyPhoto = photoUrl;
             class="mt-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 grid grid-cols-2 gap-2 text-xs"
           >
             <div>
-              <p class="text-gray-500 dark:text-gray-400 dark:text-gray-500">TC</p>
+              <p class="text-gray-500 dark:text-gray-400">TC</p>
               <p class="text-gray-900 dark:text-gray-100 font-medium">
                 {{ data.individual.identity_number }}
               </p>
             </div>
             <div>
-              <p class="text-gray-500 dark:text-gray-400 dark:text-gray-500">Cinsiyet</p>
+              <p class="text-gray-500 dark:text-gray-400">Cinsiyet</p>
               <p class="text-gray-900 dark:text-gray-100 font-medium">{{ data.individual.gender }}</p>
             </div>
             <div v-if="data.individual.birth_date">
-              <p class="text-gray-500 dark:text-gray-400 dark:text-gray-500">Doğum</p>
+              <p class="text-gray-500 dark:text-gray-400">Doğum</p>
               <p class="text-gray-900 dark:text-gray-100 font-medium">{{ data.individual.birth_date }}</p>
             </div>
             <div v-if="data.individual.disability_code">
-              <p class="text-gray-500 dark:text-gray-400 dark:text-gray-500">Engel kodu</p>
+              <p class="text-gray-500 dark:text-gray-400">Engel kodu</p>
               <p class="text-gray-900 dark:text-gray-100 font-medium">{{ data.individual.disability_code }}</p>
             </div>
             <div>
-              <p class="text-gray-500 dark:text-gray-400 dark:text-gray-500">Tip</p>
+              <p class="text-gray-500 dark:text-gray-400">Tip</p>
               <p class="text-gray-900 dark:text-gray-100 font-medium">
                 {{ data.individual.individual_type === 1 ? 'Birey' : 'Personel' }}
               </p>
@@ -146,17 +146,17 @@ const proxyPhoto = photoUrl;
       <!-- Bugünkü aktiviteler -->
       <section class="mt-5">
         <div class="px-4 mb-2 flex items-center justify-between">
-          <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">
+          <h2 class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
             Bugünkü hareketler
           </h2>
-          <span class="text-[11px] text-gray-400 dark:text-gray-500"
+          <span class="text-xs text-gray-500 dark:text-gray-400"
             >{{ sortedActivities.length }} kayıt</span
           >
         </div>
 
         <div
           v-if="sortedActivities.length === 0"
-          class="mx-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500"
+          class="mx-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-500 dark:text-gray-400"
         >
           Bugün hareket yok
         </div>
@@ -185,19 +185,18 @@ const proxyPhoto = photoUrl;
                 "
               >
                 {{ act.activity_type === 'entry' ? 'Giriş' : 'Çıkış' }}
-                <span v-if="act.is_matched_manually" class="ml-1 text-[10px] text-amber-700 dark:text-amber-300">
+                <span v-if="act.is_matched_manually" class="ml-1 text-[11px] text-amber-700 dark:text-amber-300">
                   (manuel)
                 </span>
               </p>
-              <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ toTime(act.activity_time) }}
               </p>
             </div>
             <div
-              class="text-lg"
-              :class="act.activity_type === 'entry' ? 'text-brand' : 'text-gray-400 dark:text-gray-500'"
+              :class="act.activity_type === 'entry' ? 'text-brand' : 'text-gray-500 dark:text-gray-400'"
             >
-              {{ act.activity_type === 'entry' ? '↘' : '↗' }}
+              <Icon :name="act.activity_type === 'entry' ? 'arrow-down-right' : 'arrow-up-right'" :size="18" />
             </div>
           </div>
         </div>
