@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import staticPlugin from '@fastify/static';
 import { prisma } from './lib/prisma.js';
@@ -63,9 +64,26 @@ const app = Fastify({
   trustProxy: true, // Hostinger reverse proxy arkasında çalışır
 });
 
-// CORS — artık aynı origin (marketing + API tek domain), Tauri app dışarıdan ping atabilir
+// Güvenlik header'ları — HSTS, X-Content-Type-Options, X-Frame-Options vb.
+// CSP kapalı: landing sayfası Tailwind CDN + inline script kullanıyor; katı bir
+// CSP sayfayı bozardı (ayrı, daha büyük bir iş — inline script'lerin dışarı
+// çıkarılması gerekir).
+await app.register(helmet, { contentSecurityPolicy: false });
+
+// CORS — landing/admin paneli aynı origin'den servis edilir (Origin header
+// göndermez → izin). Tauri masaüstü uygulaması license verify için cross-origin
+// ping atar; webview origin'i platforma göre tauri://localhost veya
+// http(s)://tauri.localhost olur. Bilinmeyen origin'ler reddedilir.
 await app.register(cors, {
-  origin: true, // her origin'e izin (Tauri desktop app file://, tauri://localhost vb.)
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // same-origin / server-to-server / curl
+    const ok =
+      origin.startsWith('tauri://') ||
+      origin.includes('tauri.localhost') ||
+      origin === 'https://brytakip.com' ||
+      origin === 'https://www.brytakip.com';
+    cb(null, ok);
+  },
   credentials: false,
   methods: ['GET', 'POST', 'OPTIONS'],
 });
