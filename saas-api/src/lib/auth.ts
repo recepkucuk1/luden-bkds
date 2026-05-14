@@ -8,18 +8,6 @@
  */
 
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { createHash, timingSafeEqual } from 'node:crypto';
-
-/**
- * Sabit-zamanlı string karşılaştırma. Her iki tarafı da SHA-256'ya indirip
- * karşılaştırır — böylece uzunluk farkı timingSafeEqual'ı patlatmaz ve
- * token'ın uzunluğu/içeriği yanıt süresinden sızmaz.
- */
-function safeEqual(a: string, b: string): boolean {
-  const ha = createHash('sha256').update(a).digest();
-  const hb = createHash('sha256').update(b).digest();
-  return timingSafeEqual(ha, hb);
-}
 
 export function isAdmin(req: FastifyRequest): boolean {
   const expected = process.env.ADMIN_TOKEN;
@@ -27,7 +15,7 @@ export function isAdmin(req: FastifyRequest): boolean {
   const auth = req.headers.authorization ?? '';
   const match = auth.match(/^Bearer\s+(.+)$/i);
   if (!match) return false;
-  return safeEqual(match[1], expected);
+  return match[1] === expected;
 }
 
 export function requireAdmin(req: FastifyRequest, reply: FastifyReply): boolean {

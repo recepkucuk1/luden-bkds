@@ -5,8 +5,9 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "shell:allow-open",
+    "shell:default",
     "updater:default",
+    "process:default",
     "process:allow-restart",
     "autostart:default",
     "autostart:allow-enable",
