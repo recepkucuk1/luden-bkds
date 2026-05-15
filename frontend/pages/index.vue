@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { calculateLessons } from '~/composables/useLessons';
+
 const { snapshot, loading, error, fetchSnapshot, connectWs, disconnectWs } = useBkds();
 const { relative } = useFormatters();
 const { autoCheckOnStartup } = useUpdater();
@@ -70,19 +72,71 @@ onUnmounted(() => {
 const presence = computed(() => snapshot.value?.presence ?? []);
 
 type Filter = 'all' | 'student' | 'staff';
-const filter = ref<Filter>('all');
+type SortMode = 'last' | 'first' | 'lessons' | 'alpha';
 
-// Filtre uygulanmış, içerideler üstte, sonra son aktiviteye göre azalan
+const filter = ref<Filter>('all');
+const sortMode = ref<SortMode>('last');
+const searchQuery = ref('');
+const startTime = ref(''); // "HH:MM", boş = sınır yok
+const endTime = ref('');
+
+// ISO datetime → "HH:MM" (yerel saat) — saat aralığı karşılaştırması için
+function isoToHHMM(iso: string): string {
+  const d = new Date(iso);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+// Birey için ders sayısı (öğrenci değilse veya firstEntry yoksa -1 → sıralamada en sona)
+function lessonCount(p: { individual: { individual_type: number }; firstEntry: string | null; lastExit: string | null; lastActivity: { activity_time: string } }): number {
+  if (p.individual.individual_type !== 1 || !p.firstEntry) return -1;
+  const lastTime = new Date(p.lastActivity.activity_time).getTime();
+  return calculateLessons(p.firstEntry, p.lastExit, lastTime).lessons;
+}
+
 const filteredList = computed(() => {
   let items = presence.value;
+
+  // Tab filtresi
   if (filter.value === 'student')
     items = items.filter((p) => p.individual.individual_type === 1);
   else if (filter.value === 'staff')
     items = items.filter((p) => p.individual.individual_type === 2);
 
+  // İsim araması — maskeli isimlerde ilk 3 harf kurumun tanıma ipucu
+  const q = searchQuery.value.trim().toUpperCase();
+  if (q) {
+    items = items.filter((p) => p.individual.full_name.toUpperCase().includes(q));
+  }
+
+  // Saat aralığı (ilk girişe göre)
+  if (startTime.value || endTime.value) {
+    items = items.filter((p) => {
+      if (!p.firstEntry) return false;
+      const hhmm = isoToHHMM(p.firstEntry);
+      if (startTime.value && hhmm < startTime.value) return false;
+      if (endTime.value && hhmm > endTime.value) return false;
+      return true;
+    });
+  }
+
+  // Sıralama
   return [...items].sort((a, b) => {
-    // Son aktivite zamanı (yeni → eski)
-    return b.lastActivity.activity_time.localeCompare(a.lastActivity.activity_time);
+    switch (sortMode.value) {
+      case 'first':
+        // Erkenden gelen üstte (eski zaman önce); null firstEntry'ler en sona
+        if (!a.firstEntry) return 1;
+        if (!b.firstEntry) return -1;
+        return a.firstEntry.localeCompare(b.firstEntry);
+      case 'lessons':
+        return lessonCount(b) - lessonCount(a);
+      case 'alpha':
+        return a.individual.full_name.localeCompare(b.individual.full_name, 'tr');
+      case 'last':
+      default:
+        return b.lastActivity.activity_time.localeCompare(a.lastActivity.activity_time);
+    }
   });
 });
 
@@ -294,6 +348,57 @@ const statusBanner = computed<StatusBanner | null>(() => {
           {{ f.label }}
         </button>
       </div>
+    </div>
+
+    <!-- Filtre / sıralama / arama kontrolleri -->
+    <div class="px-4 mt-3 flex flex-wrap items-center gap-2">
+      <div class="relative flex-1 min-w-[180px]">
+        <svg
+          class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+        ><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          v-model="searchQuery"
+          type="search"
+          placeholder="İsimde ara (ilk 3 harf)..."
+          class="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30 focus:bg-white dark:focus:bg-gray-900"
+        />
+      </div>
+      <select
+        v-model="sortMode"
+        class="px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30"
+        aria-label="Sıralama"
+      >
+        <option value="last">Son hareket</option>
+        <option value="first">İlk giriş</option>
+        <option value="lessons">Ders sayısı</option>
+        <option value="alpha">İsim (A-Z)</option>
+      </select>
+    </div>
+
+    <!-- Saat aralığı (ilk girişe göre filtreler) -->
+    <div class="px-4 mt-2 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+      <span class="font-medium whitespace-nowrap">Saat aralığı:</span>
+      <input
+        v-model="startTime"
+        type="time"
+        class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs focus:outline-none focus:ring-2 focus:ring-brand/30"
+      />
+      <span class="text-gray-400">—</span>
+      <input
+        v-model="endTime"
+        type="time"
+        class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs focus:outline-none focus:ring-2 focus:ring-brand/30"
+      />
+      <button
+        v-if="startTime || endTime"
+        type="button"
+        class="ml-auto text-[11px] text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 underline"
+        @click="startTime = ''; endTime = ''"
+      >
+        Temizle
+      </button>
     </div>
 
     <div v-if="loading && !snapshot" class="px-4 mt-4 space-y-2">
