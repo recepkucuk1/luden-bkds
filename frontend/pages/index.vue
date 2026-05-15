@@ -104,6 +104,44 @@ const cameraWarning = computed(() => {
   if (m >= 15) return `${m} dk okuma yok`;
   return null;
 });
+
+// Durum şeridi — tek öncelikli uyarı (öncelik: veri hatası > kamera).
+// Lisans/abonelik hard error'ları yukarıdaki tam ekran modalla ele alınır,
+// burada tekrarlanmaz. Trial/cancel countdown banner'ları soft uyarılar
+// olduğu için kendi v-if zincirinde ayrı kalır.
+type StatusAction =
+  | { kind: 'retry'; label: string }
+  | { kind: 'link'; label: string; to: string };
+
+interface StatusBanner {
+  tone: 'red' | 'amber';
+  title: string;
+  detail: string;
+  actions: StatusAction[];
+}
+
+const statusBanner = computed<StatusBanner | null>(() => {
+  if (error.value) {
+    return {
+      tone: 'red',
+      title: 'Veriler yüklenemedi',
+      detail: error.value,
+      actions: [
+        { kind: 'retry', label: 'Tekrar dene' },
+        { kind: 'link', label: 'Sistem durumu', to: '/settings' },
+      ],
+    };
+  }
+  if (cameraWarning.value) {
+    return {
+      tone: 'amber',
+      title: cameraWarning.value,
+      detail: 'Kameraları kontrol et',
+      actions: [],
+    };
+  }
+  return null;
+});
 </script>
 
 <template>
@@ -169,42 +207,11 @@ const cameraWarning = computed(() => {
     <LiveNotification />
     <UpdateBanner />
 
-    <!-- Lisans / Abonelik uyarıları — yalnızca localhost'ta (Mac/Win app);
-         telefonda lisans state'i ayrı, banner orada anlamsız.
-
-         Öncelik: hard error (lisans pasif veya abonelik bitti) → trial countdown -->
+    <!-- Trial countdown: 3 gün kala uyarı banner'ı.
+         Hard license/abonelik error'ları tam ekran modalla (yukarıda
+         isBlocked) ele alınıyor — burada tekrarlanan banner kaldırıldı. -->
     <NuxtLink
       v-if="
-        auth.isLocalhost()
-          && license.status.value?.key
-          && (license.isExpired.value
-              || license.isRevoked.value
-              || license.isWrongMachine.value
-              || license.isInvalid.value
-              || license.isSubscriptionInvalid.value)
-      "
-      to="/settings"
-      class="block mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm active:opacity-80"
-    >
-      <p class="font-medium">
-        {{
-          license.isSubscriptionInvalid.value
-            ? 'Aboneliğiniz aktif değil — uygulama kullanılamaz'
-            : license.isExpired.value
-              ? 'Lisans süresi doldu'
-              : license.isRevoked.value
-                ? 'Lisans iptal edilmiş'
-                : license.isWrongMachine.value
-                  ? 'Lisans başka bir cihaza bağlı'
-                  : 'Lisans geçersiz'
-        }}
-      </p>
-      <p class="text-[11px] mt-0.5 opacity-80">brytakip.com'dan aboneliği yenile veya iletişime geç</p>
-    </NuxtLink>
-
-    <!-- Trial countdown: 3 gün kala uyarı banner'ı -->
-    <NuxtLink
-      v-else-if="
         auth.isLocalhost()
           && license.isSubTrial.value
           && license.daysUntilTrialEnd.value !== null
@@ -238,37 +245,34 @@ const cameraWarning = computed(() => {
       <p class="text-[11px] mt-0.5 opacity-80">İptal'i geri almak için brytakip.com</p>
     </NuxtLink>
 
-    <div v-if="error" class="mx-4 mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm">
-      <p class="font-medium">Veriler yüklenemedi</p>
-      <p class="text-[11px] mt-0.5 opacity-80 leading-relaxed">{{ error }}</p>
-      <div class="flex items-center gap-2 mt-2">
-        <button
-          class="px-3 py-1 bg-white dark:bg-gray-800 rounded-lg text-xs font-medium border border-red-200 dark:border-red-900 active:bg-red-50 dark:active:bg-red-950/60"
-          @click="fetchSnapshot()"
-        >
-          Tekrar dene
-        </button>
-        <NuxtLink
-          to="/settings"
-          class="text-[11px] text-red-700 dark:text-red-300 underline"
-        >
-          Sistem durumuna bak →
-        </NuxtLink>
+    <!-- Durum şeridi — tek öncelikli uyarı (veri hatası ya da kamera).
+         Önceki ayrı error + cameraWarning banner'ları burada birleşti. -->
+    <div
+      v-if="statusBanner"
+      class="mx-4 mt-3 p-3 rounded-xl text-sm"
+      :class="statusBanner.tone === 'red'
+        ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
+        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200'"
+    >
+      <p class="font-medium">{{ statusBanner.title }}</p>
+      <p class="text-[11px] mt-0.5 opacity-80 leading-relaxed">{{ statusBanner.detail }}</p>
+      <div v-if="statusBanner.actions.length" class="flex items-center gap-3 mt-2">
+        <template v-for="a in statusBanner.actions" :key="a.label">
+          <button
+            v-if="a.kind === 'retry'"
+            class="px-3 py-1 bg-white dark:bg-gray-800 rounded-lg text-xs font-medium border border-red-200 dark:border-red-900 active:opacity-80"
+            @click="fetchSnapshot()"
+          >
+            {{ a.label }}
+          </button>
+          <NuxtLink v-else :to="a.to" class="text-[11px] underline opacity-90">
+            {{ a.label }} →
+          </NuxtLink>
+        </template>
       </div>
     </div>
 
     <StatsCards />
-
-    <div
-      v-if="cameraWarning"
-      class="mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 flex items-start gap-2.5"
-    >
-      <span class="text-amber-600 dark:text-amber-400 text-base leading-none mt-0.5">⚠</span>
-      <div class="flex-1">
-        <p class="text-sm font-medium text-amber-800 dark:text-amber-200">{{ cameraWarning }}</p>
-        <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">Kameraları kontrol et</p>
-      </div>
-    </div>
 
     <div class="px-4 mt-4">
       <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs">
