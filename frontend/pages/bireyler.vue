@@ -189,14 +189,17 @@ async function downloadMonthlyCsv() {
         <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 leading-none mt-1">{{ stats.total }}</p>
       </div>
       <div class="bg-green-100/60 dark:bg-green-950/40 rounded-lg p-2.5 text-center">
-        <p class="text-green-700 dark:text-green-300 text-[10px]">Bu hafta geldi</p>
+        <p class="text-green-700 dark:text-green-300 text-[10px]">Bu hafta (≤7 gün)</p>
         <p class="text-lg font-semibold text-green-800 dark:text-green-200 leading-none mt-1">{{ stats.present }}</p>
       </div>
       <div class="bg-amber-100/60 dark:bg-amber-950/40 rounded-lg p-2.5 text-center">
-        <p class="text-amber-700 dark:text-amber-300 text-[10px]">Gelmedi</p>
+        <p class="text-amber-700 dark:text-amber-300 text-[10px]">7+ gün yok</p>
         <p class="text-lg font-semibold text-amber-800 dark:text-amber-200 leading-none mt-1">{{ stats.absent }}</p>
       </div>
     </div>
+    <p v-if="data" class="px-4 mt-1.5 text-[10px] text-gray-500 dark:text-gray-400">
+      Son {{ data.lookBackDays }} gün tarandı. "{{ data.lookBackDays }}+ gündür yok" rozeti hiç görülmeyenlere.
+    </p>
 
     <!-- Filtreler -->
     <div class="px-4 mt-3 flex flex-wrap items-center gap-2">

@@ -395,12 +395,81 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
         // UTF-8 BOM — Excel Türkçe karakterleri doğru açar
         const csv = '﻿' + [header.join(','), ...csvRows].join('\n');
 
-        reply.header('Content-Type', 'text/csv; charset=utf-8');
-        reply.header('Content-Disposition', `attachment; filename="bry-takip-${month}.csv"`);
-        return csv;
+        // .type() + .send() — Fastify'ın string'i JSON-serialize etmesini engeller
+        return reply
+          .type('text/csv; charset=utf-8')
+          .header('Content-Disposition', `attachment; filename="bry-takip-${month}.csv"`)
+          .send(csv);
       } catch (err) {
         app.log.error({ err, month }, 'monthly-report failed');
         return reply.code(502).send({ error: 'Rapor üretilemedi' });
+      }
+    },
+  );
+
+  // ─── Günlük rapor (CSV) ───────────────────────────────────
+  // O günün anlık snapshot'undan birey × giriş/çıkış/süre tablosu.
+  app.get<{ Querystring: { date?: string; format?: string } }>(
+    '/api/daily-report',
+    async (req, reply) => {
+      if (!requireConfig(reply)) return;
+      const date = req.query?.date;
+      if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return reply.code(400).send({ error: 'date YYYY-MM-DD formatında olmalı' });
+      }
+
+      try {
+        const snapshot = await presence.getSnapshot({ date });
+        const escape = (v: string | number | null | undefined): string => {
+          if (v === null || v === undefined) return '';
+          const s = String(v);
+          if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+            return `"${s.replace(/"/g, '""')}"`;
+          }
+          return s;
+        };
+        const fmtTime = (iso: string | null): string => {
+          if (!iso) return '';
+          return new Date(iso).toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Istanbul',
+          });
+        };
+
+        const header = [
+          'Birey', 'TC No', 'Tip', 'Engel Kodu',
+          'İlk Giriş', 'Son Çıkış', 'Süre (dk)',
+          'Aktivite Sayısı', 'Manuel Eşleşme',
+        ];
+
+        const rows = snapshot.presence.map((p) => {
+          const firstMs = p.firstEntry ? new Date(p.firstEntry).getTime() : null;
+          const lastMs = p.lastExit ? new Date(p.lastExit).getTime() : null;
+          const duration = firstMs && lastMs
+            ? Math.max(0, Math.floor((lastMs - firstMs) / 60000))
+            : '';
+          return [
+            escape(p.individual.full_name),
+            escape(p.individual.identity_number),
+            escape(p.individual.individual_type === 1 ? 'Birey' : 'Personel'),
+            escape(p.individual.disability_code),
+            escape(fmtTime(p.firstEntry)),
+            escape(fmtTime(p.lastExit)),
+            duration,
+            p.todayActivityCount,
+            '', // is_matched_manually presence'ta yok; gerekirse manuel-matches endpoint'i
+          ].join(',');
+        });
+
+        const csv = '﻿' + [header.join(','), ...rows].join('\n');
+        return reply
+          .type('text/csv; charset=utf-8')
+          .header('Content-Disposition', `attachment; filename="bry-takip-${snapshot.date}.csv"`)
+          .send(csv);
+      } catch (err) {
+        app.log.error({ err, date }, 'daily-report failed');
+        return reply.code(502).send({ error: 'Günlük rapor üretilemedi' });
       }
     },
   );
@@ -410,7 +479,7 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
   // INNOVA list endpoint'i bağımlı; yoksa 502 yükselir.
   app.get<{ Querystring: { days?: string } }>('/api/individuals-catalog', async (req, reply) => {
     if (!requireConfig(reply)) return;
-    const days = Math.min(Math.max(parseInt(req.query?.days ?? '7', 10) || 7, 1), 30);
+    const days = Math.min(Math.max(parseInt(req.query?.days ?? '30', 10) || 30, 1), 60);
     try {
       const data = await presence.getAllIndividuals({ lookBackDays: days });
       reply.header('Cache-Control', 'private, max-age=300');

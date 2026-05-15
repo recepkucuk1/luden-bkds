@@ -40,6 +40,36 @@ function shiftDay(delta: number) {
 }
 
 const isViewingToday = computed(() => selectedDate.value === null);
+
+// Seçili günün CSV'sini indir
+const { backendUrl, authHeaders } = useBkds();
+const dailyDownloading = ref(false);
+const dailyDownloadError = ref<string | null>(null);
+async function downloadDailyCsv() {
+  dailyDownloading.value = true;
+  dailyDownloadError.value = null;
+  try {
+    const date = selectedDate.value ?? todayStr.value;
+    const url = selectedDate.value
+      ? `${backendUrl}/api/daily-report?date=${date}`
+      : `${backendUrl}/api/daily-report`;
+    const res = await fetch(url, { headers: authHeaders() });
+    if (!res.ok) throw new Error(`Sunucu: ${res.status}`);
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = `bry-takip-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objUrl);
+  } catch (err: any) {
+    dailyDownloadError.value = err?.message ?? 'CSV indirilemedi';
+  } finally {
+    dailyDownloading.value = false;
+  }
+}
 const { relative } = useFormatters();
 const { autoCheckOnStartup } = useUpdater();
 const license = useLicense();
@@ -404,7 +434,27 @@ const statusBanner = computed<StatusBanner | null>(() => {
       >
         Bugün
       </button>
+      <button
+        type="button"
+        :disabled="dailyDownloading"
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+        :aria-label="dailyDownloading ? 'İndiriliyor' : 'Bu günün CSV\'sini indir'"
+        :title="dailyDownloading ? 'İndiriliyor...' : 'Bu günün CSV\'sini indir'"
+        @click="downloadDailyCsv"
+      >
+        <svg v-if="!dailyDownloading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" x2="12" y1="15" y2="3"/>
+        </svg>
+        <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="animate-spin" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+        </svg>
+      </button>
     </div>
+    <p v-if="dailyDownloadError" class="mx-4 mt-1 text-[11px] text-red-700 dark:text-red-400">
+      CSV: {{ dailyDownloadError }}
+    </p>
 
     <!-- Geçmiş gün rozeti — kullanıcı canlı veriye bakmadığını bilsin -->
     <div
@@ -416,10 +466,6 @@ const statusBanner = computed<StatusBanner | null>(() => {
     </div>
 
     <StatsCards />
-
-    <HourlyDistribution />
-
-    <WeeklyComparison />
 
     <div class="px-4 mt-4">
       <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs">
