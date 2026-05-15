@@ -113,16 +113,16 @@ const proxyPhoto = photoUrl;
         </p>
         <div class="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">
           <template v-if="firstEntry">
-            <span class="text-brand dark:text-brand-400 font-medium">↘ {{ toTime(firstEntry) }}</span>
+            <span class="text-brand dark:text-brand-400 font-medium inline-flex items-center gap-0.5"><Icon name="arrow-down-right" :size="13" />{{ toTime(firstEntry) }}</span>
             <span class="text-gray-400 dark:text-gray-500">→</span>
             <span
               v-if="lastExit"
-              class="text-gray-700 dark:text-gray-200"
-            >↗ {{ toTime(lastExit) }}</span>
+              class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"
+            ><Icon name="arrow-up-right" :size="13" />{{ toTime(lastExit) }}</span>
             <span
               v-else-if="lastActivity"
-              class="text-gray-700 dark:text-gray-200"
-            >↗ {{ toTime(lastActivity.activity_time) }}</span>
+              class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"
+            ><Icon name="arrow-up-right" :size="13" />{{ toTime(lastActivity.activity_time) }}</span>
             <span class="text-gray-400 dark:text-gray-500">·</span>
             <span class="font-medium">{{ formatDuration(totalMinutes) }}</span>
           </template>
@@ -145,8 +145,8 @@ const proxyPhoto = photoUrl;
         </span>
       </div>
 
-      <div class="text-gray-400 dark:text-gray-500 text-xs ml-1 flex-shrink-0">
-        {{ isOpen ? '▲' : '▼' }}
+      <div class="text-gray-400 dark:text-gray-500 ml-1 flex-shrink-0">
+        <Icon name="chevron-down" :size="16" class="transition-transform" :class="isOpen ? 'rotate-180' : ''" />
       </div>
     </button>
 
@@ -215,14 +215,14 @@ const proxyPhoto = photoUrl;
               </p>
             </div>
             <div
-              class="text-sm flex-shrink-0"
+              class="flex-shrink-0"
               :class="
                 act.activity_type === 'entry'
                   ? 'text-brand dark:text-brand-400'
                   : 'text-gray-400 dark:text-gray-500'
               "
             >
-              {{ act.activity_type === 'entry' ? '↘' : '↗' }}
+              <Icon :name="act.activity_type === 'entry' ? 'arrow-down-right' : 'arrow-up-right'" :size="16" />
             </div>
           </div>
 

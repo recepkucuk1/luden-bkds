@@ -34,10 +34,10 @@ const isEntry = computed(() => props.type === 'entry');
       </p>
     </div>
     <div
-      class="text-lg flex-shrink-0"
+      class="flex-shrink-0"
       :class="isEntry ? 'text-brand' : 'text-gray-400'"
     >
-      {{ isEntry ? '↘' : '↗' }}
+      <Icon :name="isEntry ? 'arrow-down-right' : 'arrow-up-right'" :size="18" />
     </div>
   </NuxtLink>
 </template>

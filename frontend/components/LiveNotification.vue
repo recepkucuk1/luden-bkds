@@ -21,8 +21,8 @@ const { toTime } = useFormatters();
           : 'bg-gray-700 dark:bg-gray-600 text-white'
       "
     >
-      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">
-        {{ lastNotification.type === 'giriş' ? '↘' : '↗' }}
+      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+        <Icon :name="lastNotification.type === 'giriş' ? 'arrow-down-right' : 'arrow-up-right'" :size="16" />
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium truncate">

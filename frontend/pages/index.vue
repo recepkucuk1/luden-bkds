@@ -119,8 +119,8 @@ const cameraWarning = computed(() => {
     >
       <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl">
         <div class="flex items-center gap-3 mb-3">
-          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 flex items-center justify-center text-xl">
-            ⛔
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 flex items-center justify-center">
+            <Icon name="ban" :size="22" />
           </div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Uygulama Kullanılamaz
@@ -309,8 +309,8 @@ const cameraWarning = computed(() => {
           v-if="filteredList.length === 0"
           class="mx-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"
         >
-          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-xl text-gray-300 dark:text-gray-500">
-            ⌀
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-500">
+            <Icon name="inbox" :size="24" />
           </div>
           <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
             Bu kategoride henüz kayıt yok

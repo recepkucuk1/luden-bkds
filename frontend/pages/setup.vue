@@ -142,8 +142,8 @@ const stepNumber = computed(() => {
       >
         <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
           <div class="px-5 py-8 text-center">
-            <div class="w-20 h-20 rounded-2xl bg-white/15 mx-auto flex items-center justify-center text-4xl mb-4">
-              ↘
+            <div class="w-20 h-20 rounded-2xl bg-white/15 mx-auto flex items-center justify-center mb-4">
+              <Icon name="arrow-down-right" :size="44" />
             </div>
             <h1 class="text-2xl font-semibold">BRY Takip</h1>
             <p class="text-sm text-white/85 mt-1">
@@ -214,7 +214,7 @@ const stepNumber = computed(() => {
               aria-label="Geri"
               @click="goBack"
             >
-              ‹
+              <Icon name="chevron-left" :size="22" />
             </button>
             <NuxtLink
               v-else
@@ -222,7 +222,7 @@ const stepNumber = computed(() => {
               class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
               aria-label="İptal"
             >
-              ‹
+              <Icon name="chevron-left" :size="22" />
             </NuxtLink>
             <div class="flex-1 min-w-0">
               <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">
@@ -298,7 +298,7 @@ const stepNumber = computed(() => {
               aria-label="Geri"
               @click="goBack"
             >
-              ‹
+              <Icon name="chevron-left" :size="22" />
             </button>
             <div class="flex-1 min-w-0">
               <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">
@@ -391,8 +391,8 @@ const stepNumber = computed(() => {
       >
         <header class="bg-brand text-white pt-[env(safe-area-inset-top)]">
           <div class="px-5 py-8 text-center">
-            <div class="w-20 h-20 rounded-full bg-white/15 mx-auto flex items-center justify-center text-4xl mb-4">
-              ✓
+            <div class="w-20 h-20 rounded-full bg-white/15 mx-auto flex items-center justify-center mb-4">
+              <Icon name="check" :size="44" />
             </div>
             <h1 class="text-2xl font-semibold">Hazırsınız</h1>
             <p class="text-sm text-white/85 mt-1">
@@ -454,8 +454,8 @@ const stepNumber = computed(() => {
           <!-- Diğer ipuçları -->
           <div class="space-y-3 mb-6">
             <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                ◐
+              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand flex items-center justify-center flex-shrink-0">
+                <Icon name="bell" :size="15" />
               </span>
               <div>
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Bildirimleri açın</p>
@@ -467,8 +467,8 @@ const stepNumber = computed(() => {
             </div>
 
             <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                ⟲
+              <span class="w-7 h-7 rounded-full bg-white dark:bg-gray-900 text-brand flex items-center justify-center flex-shrink-0">
+                <Icon name="rotate-cw" :size="15" />
               </span>
               <div>
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Otomatik çalışma</p>

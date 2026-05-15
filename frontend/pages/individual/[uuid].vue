@@ -60,7 +60,7 @@ const proxyPhoto = photoUrl;
           to="/"
           class="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:bg-gray-800"
         >
-          ‹
+          <Icon name="chevron-left" :size="22" />
         </NuxtLink>
         <div class="flex-1 min-w-0">
           <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500">Birey</p>
@@ -194,10 +194,9 @@ const proxyPhoto = photoUrl;
               </p>
             </div>
             <div
-              class="text-lg"
               :class="act.activity_type === 'entry' ? 'text-brand' : 'text-gray-400 dark:text-gray-500'"
             >
-              {{ act.activity_type === 'entry' ? '↘' : '↗' }}
+              <Icon :name="act.activity_type === 'entry' ? 'arrow-down-right' : 'arrow-up-right'" :size="18" />
             </div>
           </div>
         </div>
