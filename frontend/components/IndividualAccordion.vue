@@ -114,17 +114,15 @@ const proxyPhoto = photoUrl;
         <div class="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">
           <template v-if="firstEntry">
             <span class="text-brand dark:text-brand-400 font-medium inline-flex items-center gap-0.5"><Icon name="arrow-down-right" :size="13" />{{ toTime(firstEntry) }}</span>
-            <span class="text-gray-400 dark:text-gray-500">→</span>
-            <span
-              v-if="lastExit"
-              class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"
-            ><Icon name="arrow-up-right" :size="13" />{{ toTime(lastExit) }}</span>
-            <span
-              v-else-if="lastActivity"
-              class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"
-            ><Icon name="arrow-up-right" :size="13" />{{ toTime(lastActivity.activity_time) }}</span>
-            <span class="text-gray-400 dark:text-gray-500">·</span>
-            <span class="font-medium">{{ formatDuration(totalMinutes) }}</span>
+            <template v-if="lastExit">
+              <span class="text-gray-400 dark:text-gray-500">→</span>
+              <span class="text-gray-700 dark:text-gray-200 inline-flex items-center gap-0.5"><Icon name="arrow-up-right" :size="13" />{{ toTime(lastExit) }}</span>
+              <span class="text-gray-400 dark:text-gray-500">·</span>
+              <span class="font-medium">{{ formatDuration(totalMinutes) }}</span>
+            </template>
+            <template v-else>
+              <span class="text-brand dark:text-brand-400 font-medium ml-1">· içeride</span>
+            </template>
           </template>
           <template v-else>
             <span class="text-gray-500 dark:text-gray-400">{{ todayActivityCount }} hareket</span>

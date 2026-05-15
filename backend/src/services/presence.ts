@@ -79,10 +79,17 @@ export class PresenceService {
 
       // İlk hareket (zaman olarak en eski) → "ilk giriş"
       // Son hareket (zaman olarak en yeni) → "son çıkış"
-      // BRY summary'si first_entry/last_exit veriyor — onları kullan
+      // BRY summary'si first_entry/last_exit veriyor — onları kullan.
+      //
+      // ÖNEMLİ: BRY summary'sinin last_exit alanı çıkış kaydı OLMASA bile son
+      // hareketin zamanını döndürüyor (semantik bug). Tek aktivite ya da
+      // first_entry == last_exit ise gerçek bir çıkış henüz olmamıştır,
+      // kişi hâlâ içeride sayılır — null bırak ki UI "13:52 → 13:52 · 0dk"
+      // gibi sahte aralık göstermesin.
       const sum = summaryByUuid.get(uuid);
       const firstEntry = sum?.first_entry ?? sorted[sorted.length - 1].activity_time;
-      const lastExit = sum?.last_exit ?? last.activity_time;
+      const rawLastExit = sum?.last_exit ?? last.activity_time;
+      const lastExit = acts.length > 1 && rawLastExit !== firstEntry ? rawLastExit : null;
 
       presence.push({
         individual: ind,
