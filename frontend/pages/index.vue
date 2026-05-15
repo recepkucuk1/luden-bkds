@@ -1,7 +1,45 @@
 <script setup lang="ts">
 import { calculateLessons } from '~/composables/useLessons';
 
-const { snapshot, loading, error, fetchSnapshot, connectWs, disconnectWs } = useBkds();
+const { snapshot, loading, error, fetchSnapshot, connectWs, disconnectWs, selectedDate, setDate } = useBkds();
+
+// TR günü "bugün" string'i — date input max'ı + bugüne dönüş kontrolü için
+const todayStr = computed(() =>
+  new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }),
+);
+
+// Seçili gün için v-model uyumlu wrapper (input type=date YYYY-MM-DD bekler)
+const dateInputModel = computed({
+  get: () => selectedDate.value ?? todayStr.value,
+  set: (v: string) => {
+    if (!v || v > todayStr.value) return; // gelecek günler engelli
+    setDate(v === todayStr.value ? null : v);
+  },
+});
+
+// "Pazar, 14 Mayıs 2026" gibi okunaklı format (TR locale)
+function formatTrDate(date: string): string {
+  // T12 sabitlemesi → timezone edge case'lerinde gün kaymasını önler
+  const d = new Date(`${date}T12:00:00+03:00`);
+  return d.toLocaleDateString('tr-TR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Istanbul',
+  });
+}
+
+// Önceki/sonraki gün
+function shiftDay(delta: number) {
+  const cur = selectedDate.value ?? todayStr.value;
+  const d = new Date(`${cur}T12:00:00+03:00`);
+  d.setDate(d.getDate() + delta);
+  const newDate = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+  if (newDate > todayStr.value) return; // gelecek engelli
+  setDate(newDate === todayStr.value ? null : newDate);
+}
+
+const isViewingToday = computed(() => selectedDate.value === null);
 const { relative } = useFormatters();
 const { autoCheckOnStartup } = useUpdater();
 const license = useLicense();
@@ -151,6 +189,8 @@ const lastReadingMinutesAgo = computed(() => {
 });
 
 const cameraWarning = computed(() => {
+  // Sadece bugüne bakarken anlamlı — geçmiş günde "X dk okuma yok" hep tetiklenir
+  if (selectedDate.value !== null) return null;
   const m = lastReadingMinutesAgo.value;
   if (m === null) return null;
   const h = new Date().getHours();
@@ -326,7 +366,60 @@ const statusBanner = computed<StatusBanner | null>(() => {
       </div>
     </div>
 
+    <!-- Tarih seçici — geçmiş güne bakış için. Bugünde WS canlı, geçmişte statik. -->
+    <div class="px-4 mt-3 flex items-center gap-2">
+      <button
+        type="button"
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        aria-label="Önceki gün"
+        @click="shiftDay(-1)"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+
+      <label class="flex-1 relative">
+        <input
+          v-model="dateInputModel"
+          type="date"
+          :max="todayStr"
+          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/30"
+        />
+      </label>
+
+      <button
+        type="button"
+        :disabled="isViewingToday"
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:hover:bg-gray-100 dark:disabled:hover:bg-gray-800"
+        aria-label="Sonraki gün"
+        @click="shiftDay(1)"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+
+      <button
+        v-if="!isViewingToday"
+        type="button"
+        class="px-3 py-2 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-dark transition-colors"
+        @click="setDate(null)"
+      >
+        Bugün
+      </button>
+    </div>
+
+    <!-- Geçmiş gün rozeti — kullanıcı canlı veriye bakmadığını bilsin -->
+    <div
+      v-if="!isViewingToday && snapshot"
+      class="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 text-xs flex items-center gap-2"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span><strong>{{ formatTrDate(snapshot.date) }}</strong> — geçmiş gün, canlı güncelleme yok</span>
+    </div>
+
     <StatsCards />
+
+    <HourlyDistribution />
+
+    <WeeklyComparison />
 
     <div class="px-4 mt-4">
       <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs">

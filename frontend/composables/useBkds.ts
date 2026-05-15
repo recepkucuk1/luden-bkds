@@ -47,10 +47,13 @@ interface RecentActivityItem {
 
 export interface Snapshot {
   generatedAt: string;
+  date: string;           // hangi günün snapshot'ı (YYYY-MM-DD, TR günü)
+  isToday: boolean;       // bugün mü? (UI canlı/geçmiş ayrımı için)
   todayCount: number;
   presence: PresenceItem[];
   recentActivities: RecentActivityItem[];
   manualMatchToday: number;
+  hourlyDistribution: number[]; // 24 eleman, her TR saatinin (0-23) aktivite sayısı
 }
 
 export const useBkds = () => {
@@ -92,12 +95,17 @@ export const useBkds = () => {
     'bkds-last-notif',
     () => null,
   );
+  // Seçili gün — null = bugün (canlı + WS). YYYY-MM-DD = geçmiş gün (statik).
+  const selectedDate = useState<string | null>('bkds-selected-date', () => null);
 
   const fetchSnapshot = async () => {
     loading.value = true;
     error.value = null;
     try {
-      const data = await $fetch<Snapshot>(`${backendUrl}/api/snapshot`, {
+      const url = selectedDate.value
+        ? `${backendUrl}/api/snapshot?date=${selectedDate.value}`
+        : `${backendUrl}/api/snapshot`;
+      const data = await $fetch<Snapshot>(url, {
         headers: auth.authHeader(),
       });
       snapshot.value = data;
@@ -305,12 +313,30 @@ export const useBkds = () => {
    */
   const authHeaders = (): Record<string, string> => auth.authHeader();
 
+  /**
+   * Seçili günü değiştir. null = bugün (canlı + WS), YYYY-MM-DD = geçmiş gün (statik).
+   * Geçmişe geçince WS kapanır, bugüne dönünce yeniden bağlanır.
+   */
+  const setDate = async (date: string | null) => {
+    selectedDate.value = date;
+    if (date === null) {
+      // Bugüne dönüş — WS yeniden bağlan (initial fetchSnapshot WS onopen'da)
+      connectWs();
+    } else {
+      // Geçmiş gün — WS kapat, doğrudan fetch
+      disconnectWs();
+      await fetchSnapshot();
+    }
+  };
+
   return {
     snapshot,
     loading,
     error,
     wsConnected,
     lastNotification,
+    selectedDate,
+    setDate,
     fetchSnapshot,
     connectWs,
     disconnectWs,

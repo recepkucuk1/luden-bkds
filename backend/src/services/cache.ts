@@ -20,11 +20,14 @@ interface CacheEntry<T> {
 }
 
 const INDIVIDUAL_TTL_MS = 60 * 60 * 1000;       // 1 saat
-const ACTIVITIES_TTL_MS = 30 * 1000;            // 30 saniye
+const ACTIVITIES_TTL_MS = 30 * 1000;            // 30 saniye — bugünkü veri
+const HISTORICAL_ACTIVITIES_TTL_MS = 60 * 60 * 1000;  // 1 saat — geçmiş gün statik
 
 export class CacheService {
   private individuals = new Map<string, CacheEntry<InnovaIndividual>>();
   private activities = new Map<string, CacheEntry<InnovaActivity[]>>();
+  // Geçmiş gün aktiviteleri — key: "uuid:YYYY-MM-DD"
+  private historicalActivities = new Map<string, CacheEntry<InnovaActivity[]>>();
   // Eşzamanlı isteklerin aynı UUID için tekrar fetch yapmamasını sağla
   private inflightIndividuals = new Map<string, Promise<InnovaIndividual>>();
 
@@ -97,6 +100,26 @@ export class CacheService {
     this.activities.set(uuid, {
       value: res.results,
       expiresAt: Date.now() + ACTIVITIES_TTL_MS,
+    });
+    return res.results;
+  }
+
+  /**
+   * Geçmiş bir günün bireyin aktivite listesi. Statik veri olduğu için daha
+   * uzun TTL (1 saat). Bugün için bu metod yerine getActivities() kullanın —
+   * o polling servisinin akıllı invalidation'ına bağlı kısa TTL ile çalışır.
+   */
+  async getActivitiesForDate(uuid: string, date: string): Promise<InnovaActivity[]> {
+    const key = `${uuid}:${date}`;
+    const cached = this.historicalActivities.get(key);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.value;
+    }
+
+    const res = await this.adapter.getIndividualActivities(uuid, { date });
+    this.historicalActivities.set(key, {
+      value: res.results,
+      expiresAt: Date.now() + HISTORICAL_ACTIVITIES_TTL_MS,
     });
     return res.results;
   }

@@ -12,6 +12,7 @@ withDefaults(defineProps<{ name: string; size?: number | string }>(), {
 
 const icons: Record<string, string> = {
   'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+  'chevron-right': '<path d="m9 18 6-6-6-6"/>',
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
   'arrow-down-right': '<path d="M7 7 17 17"/><path d="M17 9v8H9"/>',
   'arrow-up-right': '<path d="M7 17 17 7"/><path d="M9 7h8v8"/>',

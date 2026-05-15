@@ -10,11 +10,17 @@ const { snapshot } = useBkds();
         {{ snapshot?.todayCount ?? '–' }}
       </p>
     </div>
-    <div class="bg-amber-50 dark:bg-amber-950/40 rounded-xl p-3">
-      <p class="text-[11px] text-amber-700 dark:text-amber-300 font-medium">Manuel eşleşme</p>
+    <NuxtLink
+      to="/manuel"
+      class="bg-amber-50 dark:bg-amber-950/40 rounded-xl p-3 hover:bg-amber-100 dark:hover:bg-amber-900/30 active:opacity-80 transition-colors block"
+    >
+      <div class="flex items-start justify-between">
+        <p class="text-[11px] text-amber-700 dark:text-amber-300 font-medium">Manuel eşleşme</p>
+        <Icon name="chevron-right" :size="14" class="text-amber-600 dark:text-amber-400 opacity-60" />
+      </div>
       <p class="text-2xl font-semibold text-amber-700 dark:text-amber-300 mt-0.5">
         {{ snapshot?.manualMatchToday ?? '–' }}
       </p>
-    </div>
+    </NuxtLink>
   </div>
 </template>

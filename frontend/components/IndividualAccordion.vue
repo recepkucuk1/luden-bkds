@@ -204,8 +204,9 @@ const proxyPhoto = photoUrl;
                 <span
                   v-if="act.is_matched_manually"
                   class="ml-1 text-[10px] text-amber-700 dark:text-amber-300"
+                  :title="act.manual_match_similarity_score !== null ? `Benzerlik %${Math.round(act.manual_match_similarity_score)}` : 'Manuel eşleşme'"
                 >
-                  (manuel)
+                  (manuel<span v-if="act.manual_match_similarity_score !== null"> · %{{ Math.round(act.manual_match_similarity_score) }}</span>)
                 </span>
               </p>
               <p class="text-[11px] text-gray-500 dark:text-gray-400">

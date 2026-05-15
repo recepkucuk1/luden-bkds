@@ -324,14 +324,133 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
   });
 
   // ─── Anasayfa snapshot ────────────────────────────────────
-  app.get('/api/snapshot', async (req, reply) => {
+  // `?date=YYYY-MM-DD` verilirse o günün snapshot'ı (geçmiş veri).
+  // Verilmezse bugün. Geçmiş günler için cache 5 dk; bugün için no-store
+  // (polling/WS canlı veri sağlar).
+  app.get<{ Querystring: { date?: string } }>('/api/snapshot', async (req, reply) => {
     if (!requireConfig(reply)) return;
+    const date = req.query?.date;
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return reply.code(400).send({ error: 'date YYYY-MM-DD formatında olmalı' });
+    }
     try {
-      const data = await presence.getSnapshot();
-      reply.header('Cache-Control', 'no-store');
+      const data = await presence.getSnapshot({ date });
+      reply.header('Cache-Control', data.isToday ? 'no-store' : 'private, max-age=300');
       return data;
     } catch (err) {
-      app.log.error({ err }, 'snapshot failed');
+      app.log.error({ err, date }, 'snapshot failed');
+      return reply.code(502).send({ error: 'INNOVA bağlantısı kurulamadı' });
+    }
+  });
+
+  // ─── Aylık rapor (MEB hazırlığı için CSV) ─────────────────
+  // `?month=YYYY-MM` opsiyonel — verilmezse bu ay.
+  // Her birey için ayda gelinen gün sayısı + birey meta. CSV indir butonu için.
+  app.get<{ Querystring: { month?: string; format?: string } }>(
+    '/api/monthly-report',
+    async (req, reply) => {
+      if (!requireConfig(reply)) return;
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+      const month = req.query?.month ?? today.slice(0, 7);
+      const format = req.query?.format ?? 'csv';
+
+      if (!/^\d{4}-\d{2}$/.test(month)) {
+        return reply.code(400).send({ error: 'month YYYY-MM formatında olmalı' });
+      }
+
+      try {
+        const rows = await presence.getMonthlyReport(month);
+
+        if (format === 'json') {
+          reply.header('Cache-Control', 'private, max-age=300');
+          return { month, rows };
+        }
+
+        // CSV (default)
+        const escape = (v: string | number | null | undefined): string => {
+          if (v === null || v === undefined) return '';
+          const s = String(v);
+          if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+            return `"${s.replace(/"/g, '""')}"`;
+          }
+          return s;
+        };
+
+        const fmtDate = (iso: string | null): string => {
+          if (!iso) return '';
+          return new Date(iso).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' });
+        };
+
+        const header = ['Birey', 'TC No', 'Tip', 'Engel Kodu', 'Gelinen Gün', 'İlk Görülme', 'Son Görülme'];
+        const csvRows = rows.map((r) => [
+          escape(r.full_name),
+          escape(r.identity_number),
+          escape(r.individual_type === 1 ? 'Birey' : 'Personel'),
+          escape(r.disability_code),
+          r.daysAttended,
+          escape(fmtDate(r.firstSeen)),
+          escape(fmtDate(r.lastSeen)),
+        ].join(','));
+
+        // UTF-8 BOM — Excel Türkçe karakterleri doğru açar
+        const csv = '﻿' + [header.join(','), ...csvRows].join('\n');
+
+        reply.header('Content-Type', 'text/csv; charset=utf-8');
+        reply.header('Content-Disposition', `attachment; filename="bry-takip-${month}.csv"`);
+        return csv;
+      } catch (err) {
+        app.log.error({ err, month }, 'monthly-report failed');
+        return reply.code(502).send({ error: 'Rapor üretilemedi' });
+      }
+    },
+  );
+
+  // ─── Bireyler kataloğu (yokluk takibi) ────────────────────
+  // Tüm kayıtlı bireyler + son 7 gün içinde görülen son aktivite zamanı.
+  // INNOVA list endpoint'i bağımlı; yoksa 502 yükselir.
+  app.get<{ Querystring: { days?: string } }>('/api/individuals-catalog', async (req, reply) => {
+    if (!requireConfig(reply)) return;
+    const days = Math.min(Math.max(parseInt(req.query?.days ?? '7', 10) || 7, 1), 30);
+    try {
+      const data = await presence.getAllIndividuals({ lookBackDays: days });
+      reply.header('Cache-Control', 'private, max-age=300');
+      return data;
+    } catch (err) {
+      app.log.error({ err }, 'individuals-catalog failed');
+      return reply.code(502).send({ error: 'INNOVA bireyler listesi alınamadı' });
+    }
+  });
+
+  // ─── Haftalık karşılaştırma ───────────────────────────────
+  // Son 7 gün vs önceki 7 gün — kaç farklı birey + günlük sayım.
+  // 14 summary çağrısı yapar; 1 dk Cache-Control ile sık çağrımı dampler.
+  app.get('/api/weekly-comparison', async (_req, reply) => {
+    if (!requireConfig(reply)) return;
+    try {
+      const data = await presence.getWeeklyComparison();
+      reply.header('Cache-Control', 'private, max-age=60');
+      return data;
+    } catch (err) {
+      app.log.error({ err }, 'weekly-comparison failed');
+      return reply.code(502).send({ error: 'INNOVA bağlantısı kurulamadı' });
+    }
+  });
+
+  // ─── Manuel eşleşmeler ────────────────────────────────────
+  // `?date=YYYY-MM-DD` opsiyonel — verilmezse bugün.
+  // is_matched_manually=true olan tüm aktivitelerin listesi + benzerlik skoru.
+  app.get<{ Querystring: { date?: string } }>('/api/manual-matches', async (req, reply) => {
+    if (!requireConfig(reply)) return;
+    const date = req.query?.date;
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return reply.code(400).send({ error: 'date YYYY-MM-DD formatında olmalı' });
+    }
+    try {
+      const data = await presence.getManualMatches({ date });
+      reply.header('Cache-Control', data.isToday ? 'no-store' : 'private, max-age=300');
+      return data;
+    } catch (err) {
+      app.log.error({ err, date }, 'manual-matches failed');
       return reply.code(502).send({ error: 'INNOVA bağlantısı kurulamadı' });
     }
   });
