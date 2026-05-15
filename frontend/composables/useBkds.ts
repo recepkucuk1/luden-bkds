@@ -38,6 +38,7 @@ interface PresenceItem {
   todayActivityCount: number;
   firstEntry: string | null;
   lastExit: string | null;
+  hasManualMatch: boolean;
 }
 
 interface RecentActivityItem {

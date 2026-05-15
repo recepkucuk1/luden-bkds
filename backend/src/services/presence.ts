@@ -12,6 +12,7 @@
 
 import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from './cache.js';
+import { calculateLessons } from './lessons.js';
 import type {
   InnovaIndividual,
   InnovaActivity,
@@ -153,6 +154,7 @@ export class PresenceService {
         todayActivityCount: acts.length,
         firstEntry,
         lastExit,
+        hasManualMatch: !!sum?.has_manuel_match,
       });
     }
 
@@ -350,22 +352,28 @@ export class PresenceService {
   }
 
   /**
-   * Aylık rapor — her birey için o ayda gelinen gün sayısı (MEB raporu için temel veri).
+   * Aylık rapor — her birey × her gün için bir satır (denormalize).
    *
-   * Maliyet: ay başından bugüne kadar her gün için 1 summary çağrısı (max 31).
-   * Detaylı ders sayısı için per-individual activity fetch gerekir; bu sürüm
-   * sadece "gelinen gün sayısı" + birey meta veriyor. MEB raporu formatına
-   * göre kullanıcı bunu Excel'de işleyebilir.
+   * Sütunlar: tarih, birey, TC, tip, engel kodu, ilk giriş, son çıkış,
+   *           süre (dk), ders sayısı (sadece bireyler), manuel eşleşme.
+   *
+   * Excel'de filtrelenebilir; MEB raporu hazırlığı için ham veri.
+   * Maliyet: ay içindeki gün sayısı × 1 summary çağrısı (max 31, paralel).
+   * Veriyi BRY summary'sinin first_entry/last_exit'inden alır — activity-level
+   * detay için per-day per-individual fetch gerekir (şu an ihtiyaç yok).
    */
   async getMonthlyReport(month: string /* YYYY-MM */): Promise<Array<{
+    date: string;
     uuid: string;
     full_name: string;
     identity_number: string;
     individual_type: number;
     disability_code: string;
-    daysAttended: number;
-    firstSeen: string | null;
-    lastSeen: string | null;
+    firstEntry: string | null;
+    lastExit: string | null;
+    durationMinutes: number | null;
+    lessons: number | null;
+    hasManualMatch: boolean;
   }>> {
     const [yearStr, monthStr] = month.split('-');
     const year = Number(yearStr);
@@ -384,49 +392,82 @@ export class PresenceService {
       dates.map((date) =>
         this.adapter
           .getTodayActivitySummary({
-            pageSize: 100,
+            pageSize: 200,
             date: isTodayInTurkey(date) ? undefined : date,
           })
           .catch(() => ({ count: 0, next: null, previous: null, results: [] as InnovaDailySummary[] })),
       ),
     );
 
-    // Per-UUID aggregate
-    const stats = new Map<string, { daysAttended: number; firstSeen: string | null; lastSeen: string | null }>();
+    // Tüm benzersiz UUID'leri topla → meta bilgi paralel fetch (cache'li)
+    const allUuids = new Set<string>();
     for (const s of summaries) {
+      for (const r of s.results) allUuids.add(r.individual_uuid);
+    }
+    const individuals = await this.cache.getIndividuals([...allUuids]);
+
+    const rows: Array<{
+      date: string;
+      uuid: string;
+      full_name: string;
+      identity_number: string;
+      individual_type: number;
+      disability_code: string;
+      firstEntry: string | null;
+      lastExit: string | null;
+      durationMinutes: number | null;
+      lessons: number | null;
+      hasManualMatch: boolean;
+    }> = [];
+
+    for (let i = 0; i < dates.length; i++) {
+      const date = dates[i];
+      const s = summaries[i];
       for (const r of s.results) {
-        const existing = stats.get(r.individual_uuid) ?? { daysAttended: 0, firstSeen: null, lastSeen: null };
-        existing.daysAttended += 1;
-        const candidate = r.last_exit || r.first_entry;
-        if (candidate) {
-          if (!existing.firstSeen || candidate < existing.firstSeen) existing.firstSeen = candidate;
-          if (!existing.lastSeen || candidate > existing.lastSeen) existing.lastSeen = candidate;
+        const ind = individuals.get(r.individual_uuid);
+        if (!ind) continue;
+
+        const firstEntry = r.first_entry || null;
+        // Sahte çıkış (presence.getSnapshot'taki ile aynı mantık): aynı zaman → null
+        let lastExit: string | null = r.last_exit || null;
+        if (lastExit && firstEntry && lastExit === firstEntry) {
+          lastExit = null;
         }
-        stats.set(r.individual_uuid, existing);
+
+        const durationMinutes = firstEntry && lastExit
+          ? Math.max(0, Math.floor((new Date(lastExit).getTime() - new Date(firstEntry).getTime()) / 60000))
+          : null;
+
+        let lessons: number | null = null;
+        if (ind.individual_type === 1 && firstEntry) {
+          // Ders sayısı sadece bireyler için anlamlı (personel için MEB ödenek yok)
+          const reference = lastExit
+            ? new Date(lastExit).getTime()
+            : new Date(firstEntry).getTime();
+          lessons = calculateLessons(firstEntry, lastExit, reference).lessons;
+        }
+
+        rows.push({
+          date,
+          uuid: r.individual_uuid,
+          full_name: ind.full_name,
+          identity_number: ind.identity_number,
+          individual_type: ind.individual_type,
+          disability_code: ind.disability_code,
+          firstEntry,
+          lastExit,
+          durationMinutes,
+          lessons,
+          hasManualMatch: !!r.has_manuel_match,
+        });
       }
     }
 
-    const uuids = [...stats.keys()];
-    const individuals = await this.cache.getIndividuals(uuids);
-
-    const rows = [];
-    for (const [uuid, s] of stats) {
-      const ind = individuals.get(uuid);
-      if (!ind) continue;
-      rows.push({
-        uuid,
-        full_name: ind.full_name,
-        identity_number: ind.identity_number,
-        individual_type: ind.individual_type,
-        disability_code: ind.disability_code,
-        daysAttended: s.daysAttended,
-        firstSeen: s.firstSeen,
-        lastSeen: s.lastSeen,
-      });
-    }
-
-    // Çok gelen üstte
-    rows.sort((a, b) => b.daysAttended - a.daysAttended);
+    // En yeni gün üstte, gün içinde isim alfabetik
+    rows.sort((a, b) =>
+      b.date.localeCompare(a.date) ||
+      a.full_name.localeCompare(b.full_name, 'tr'),
+    );
     return rows;
   }
 

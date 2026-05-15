@@ -58,6 +58,8 @@ export interface PresenceItem {
   // bazen entry'i exit gibi okuyor; biz sadece ilk-son hareket aralığını gösteriyoruz.
   firstEntry: string | null;
   lastExit: string | null;
+  // BRY summary'sinden — o gün manuel eşleştirme yapılmış mı?
+  hasManualMatch: boolean;
 }
 
 export interface RecentActivityItem {
