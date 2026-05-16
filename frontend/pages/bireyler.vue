@@ -8,6 +8,7 @@
  */
 const { backendUrl, authHeaders } = useBkds();
 const { initials } = useFormatters();
+const individualFilter = useIndividualFilter();
 
 interface Individual {
   uuid: string;
@@ -85,6 +86,9 @@ function toneClasses(tone: 'green' | 'gray' | 'amber' | 'red'): string {
 const filteredList = computed(() => {
   const items = data.value?.individuals ?? [];
   let out = items;
+
+  // Cihaz-yerel birey filtresi (boş set ise hepsi)
+  out = individualFilter.applyFilter(out, (e) => e.individual.uuid);
 
   // İsim araması
   const q = searchQuery.value.trim().toUpperCase();

@@ -6,6 +6,7 @@ const autostart = useAutostart();
 const network = useNetworkInfo();
 const theme = useTheme();
 const license = useLicense();
+const individualFilter = useIndividualFilter();
 
 // ── Lisans aktivasyonu ──────────────────────────────────────────
 const licenseKeyInput = ref('');
@@ -770,6 +771,31 @@ const notInSecureContext = computed(() => {
           </button>
         </div>
       </div>
+    </section>
+
+    <!-- Birey filtresi — sadece görülmek istenen bireyler -->
+    <section class="mt-5 px-4">
+      <h2 class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-2">
+        Birey filtresi
+      </h2>
+      <NuxtLink
+        to="/birey-filtresi"
+        class="block bg-gray-50 dark:bg-gray-800 rounded-xl p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {{ individualFilter.isEnabled.value
+                ? `${individualFilter.selectedCount.value} birey görünüyor`
+                : 'Tüm bireyler görünüyor' }}
+            </p>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+              Sadece sen ilgileniyorsan görünür listeyi sınırla. Diğer cihazlar etkilenmez.
+            </p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-400 flex-shrink-0"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+      </NuxtLink>
     </section>
 
     <!-- Görünüm (her platformda gösterilir — kullanıcı görsel tercihi) -->

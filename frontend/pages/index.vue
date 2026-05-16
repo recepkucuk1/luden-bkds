@@ -74,6 +74,7 @@ const { relative } = useFormatters();
 const { autoCheckOnStartup } = useUpdater();
 const license = useLicense();
 const auth = useAuth();
+const individualFilter = useIndividualFilter();
 
 // Tüm akordeonların paylaştığı reactive "şu an" — her dakika tik atar
 // İçerideyken süre canlı sayar
@@ -168,6 +169,10 @@ function lessonCount(p: { individual: { individual_type: number }; firstEntry: s
 
 const filteredList = computed(() => {
   let items = presence.value;
+
+  // Cihaz-yerel "birey filtresi" — kullanıcı sadece kendi seçtiklerini görür.
+  // Boş set ise filter pass-through (tüm bireyler döner).
+  items = individualFilter.applyFilter(items, (p) => p.individual.uuid);
 
   // Tab filtresi
   if (filter.value === 'student')
@@ -474,6 +479,23 @@ const statusBanner = computed<StatusBanner | null>(() => {
       >
         Bugüne dön
       </button>
+    </div>
+
+    <!-- Birey filtresi aktif rozeti — kullanıcı "neden tümü görünmüyor?" anlasın -->
+    <div
+      v-if="individualFilter.isEnabled.value"
+      class="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-brand-50 dark:bg-brand-950/30 text-brand-dark dark:text-brand-200 text-xs flex items-center gap-2"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      <span class="flex-1 min-w-0 truncate">
+        Filtre aktif — <strong>{{ individualFilter.selectedCount.value }}</strong> birey görünüyor
+      </span>
+      <NuxtLink
+        to="/birey-filtresi"
+        class="flex-shrink-0 px-2.5 py-1 -mr-1.5 rounded-md bg-brand text-white text-[11px] font-medium hover:bg-brand-dark transition-colors"
+      >
+        Düzenle
+      </NuxtLink>
     </div>
 
     <StatsCards />
