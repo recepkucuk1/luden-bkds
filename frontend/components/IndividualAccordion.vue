@@ -133,13 +133,20 @@ const proxyPhoto = photoUrl;
       <!-- Ders rozeti (sadece öğrenci için) -->
       <div
         v-if="isStudent && lessonInfo"
-        class="flex flex-col items-end flex-shrink-0"
+        class="flex flex-col items-end flex-shrink-0 gap-0.5"
       >
         <span
           class="text-[10px] px-2 py-0.5 rounded-md font-semibold"
           :class="lessonBadgeClass"
         >
           {{ lessonInfo.lessons }} DERS
+        </span>
+        <!-- Bir sonraki derse kalan dakika (henüz 3 derse ulaşmadıysa) -->
+        <span
+          v-if="lessonInfo.minutesToNextLesson !== null && lessonInfo.minutesToNextLesson > 0"
+          class="text-[9px] text-gray-500 dark:text-gray-400 leading-tight whitespace-nowrap"
+        >
+          {{ lessonInfo.lessons + 1 }} derse {{ lessonInfo.minutesToNextLesson }} dk
         </span>
       </div>
 
