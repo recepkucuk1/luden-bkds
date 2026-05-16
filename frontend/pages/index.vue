@@ -397,29 +397,37 @@ const statusBanner = computed<StatusBanner | null>(() => {
     </div>
 
     <!-- Tarih seçici — geçmiş güne bakış için. Bugünde WS canlı, geçmişte statik. -->
+    <!-- Tek satır, 4 element sabit: prev / tarih / next / indir. "Bugüne dön"
+         geçmiş gün rozetinin yanında ayrı bir buton (alt satır), satırı sıkmasın. -->
     <div class="px-4 mt-3 flex items-center gap-2">
       <button
         type="button"
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        class="w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         aria-label="Önceki gün"
         @click="shiftDay(-1)"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </button>
 
-      <label class="flex-1 relative">
+      <!-- Tarih container: native input görünmez (opacity-0, absolute), üstte
+           kendi formatımızda metin. Genişlik flex-1 ile esner, native iOS date
+           input chrome'u sağ butonlara binmez. -->
+      <label class="relative flex-1 min-w-0 h-9 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <span class="text-sm font-medium text-gray-900 dark:text-gray-100 select-none">
+          {{ formatTrDate(dateInputModel) }}
+        </span>
         <input
           v-model="dateInputModel"
           type="date"
           :max="todayStr"
-          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/30"
+          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
       </label>
 
       <button
         type="button"
         :disabled="isViewingToday"
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:hover:bg-gray-100 dark:disabled:hover:bg-gray-800"
+        class="w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:hover:bg-gray-100 dark:disabled:hover:bg-gray-800"
         aria-label="Sonraki gün"
         @click="shiftDay(1)"
       >
@@ -427,17 +435,9 @@ const statusBanner = computed<StatusBanner | null>(() => {
       </button>
 
       <button
-        v-if="!isViewingToday"
-        type="button"
-        class="px-3 py-2 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-dark transition-colors"
-        @click="setDate(null)"
-      >
-        Bugün
-      </button>
-      <button
         type="button"
         :disabled="dailyDownloading"
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+        class="w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
         :aria-label="dailyDownloading ? 'İndiriliyor' : 'Bu günün CSV\'sini indir'"
         :title="dailyDownloading ? 'İndiriliyor...' : 'Bu günün CSV\'sini indir'"
         @click="downloadDailyCsv"
@@ -456,13 +456,21 @@ const statusBanner = computed<StatusBanner | null>(() => {
       CSV: {{ dailyDownloadError }}
     </p>
 
-    <!-- Geçmiş gün rozeti — kullanıcı canlı veriye bakmadığını bilsin -->
+    <!-- Geçmiş gün rozeti — kullanıcı canlı veriye bakmadığını bilsin
+         Sağında "Bugüne dön" butonu (date selector satırını sıkıştırmasın). -->
     <div
       v-if="!isViewingToday && snapshot"
       class="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 text-xs flex items-center gap-2"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span><strong>{{ formatTrDate(snapshot.date) }}</strong> — geçmiş gün, canlı güncelleme yok</span>
+      <span class="flex-1 min-w-0 truncate"><strong>{{ formatTrDate(snapshot.date) }}</strong> — geçmiş gün, canlı güncelleme yok</span>
+      <button
+        type="button"
+        class="flex-shrink-0 px-2.5 py-1 -mr-1.5 rounded-md bg-brand text-white text-[11px] font-medium hover:bg-brand-dark transition-colors"
+        @click="setDate(null)"
+      >
+        Bugüne dön
+      </button>
     </div>
 
     <StatsCards />
