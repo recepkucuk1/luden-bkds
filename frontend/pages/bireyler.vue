@@ -40,12 +40,18 @@ const searchQuery = ref('');
 type Filter = 'all' | 'present' | 'absent';
 const filter = ref<Filter>('all');
 
-// Şu an TR saatine göre — lastSeen'den gün hesaplamak için
-const trNow = computed(() => Date.now());
+// Sıralama
+type SortMode = 'alpha' | 'recent' | 'absent';
+const sortMode = ref<SortMode>('alpha');
 
+// TR takvim günü bazlı gün farkı — saat dilimi 24-saat blok değil, CALENDAR günü.
+// Bug: dün 14:00 → bugün 10:00 = 20 saat = 0.83 gün → Math.floor=0 → "Bugün"
+// dönüyordu. Calendar günler farklı olduğu için "Dün" demesi gerekir.
 function daysSince(iso: string): number {
-  const t = new Date(iso).getTime();
-  return Math.floor((trNow.value - t) / (1000 * 60 * 60 * 24));
+  const trNow = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+  const trWhen = new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+  const diffMs = new Date(trNow).getTime() - new Date(trWhen).getTime();
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 function lastSeenLabel(lastSeen: string | null, lookBackDays: number): {
@@ -93,10 +99,27 @@ const filteredList = computed(() => {
     out = out.filter((e) => !e.lastSeen || daysSince(e.lastSeen) > 7);
   }
 
-  // İsim sıralı (alfabetik, TR locale)
-  return [...out].sort((a, b) =>
-    a.individual.full_name.localeCompare(b.individual.full_name, 'tr'),
-  );
+  return [...out].sort((a, b) => {
+    switch (sortMode.value) {
+      case 'recent': {
+        // En son gelen üstte; hiç görülmeyenler en sona
+        if (!a.lastSeen && !b.lastSeen) return 0;
+        if (!a.lastSeen) return 1;
+        if (!b.lastSeen) return -1;
+        return b.lastSeen.localeCompare(a.lastSeen);
+      }
+      case 'absent': {
+        // En uzun süre yok olanlar üstte; hiç görülmeyenler en başta
+        if (!a.lastSeen && !b.lastSeen) return 0;
+        if (!a.lastSeen) return -1;
+        if (!b.lastSeen) return 1;
+        return a.lastSeen.localeCompare(b.lastSeen);
+      }
+      case 'alpha':
+      default:
+        return a.individual.full_name.localeCompare(b.individual.full_name, 'tr');
+    }
+  });
 });
 
 const stats = computed(() => {
@@ -235,6 +258,15 @@ async function downloadMonthlyCsv() {
           {{ f.label }}
         </button>
       </div>
+      <select
+        v-model="sortMode"
+        class="px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30"
+        aria-label="Sıralama"
+      >
+        <option value="alpha">İsim (A-Z)</option>
+        <option value="recent">Son gelen</option>
+        <option value="absent">En uzun yok</option>
+      </select>
     </div>
 
     <!-- Loading -->

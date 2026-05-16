@@ -218,8 +218,12 @@ onMounted(async () => {
   // kendi lisans state'i değil, Mac üzerinden yönetilir
   if (auth.isLocalhost()) {
     license.loadCached();
-    if (license.status.value?.key && license.shouldReverify()) {
-      license.reverify().catch(() => { /* network hatası önemli değil */ });
+    // Ayarlar açılınca CACHE'den bağımsız her zaman reverify — kullanıcı
+    // abonelik durumunu görmek için geldi. Aksi halde site'de ödeme
+    // yapılmış olsa bile app saatlerce TRIAL kabukunda kalıp yanlış
+    // "Aboneliği Başlat" butonu gösteriyordu.
+    if (license.status.value?.key) {
+      license.reverify(true).catch(() => { /* network hatası önemli değil */ });
     }
   }
   try {
