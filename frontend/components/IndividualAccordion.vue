@@ -33,16 +33,20 @@ const activities = ref<Activity[]>([]);
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 
+// Index sayfasındaki global "şu an" tick'i — her dakika güncellenir.
+// İçeride olan kişiler için süre hesabı canlı kalır (kamera yeni okuma
+// yapmasa bile geri sayım azalır).
+const now = useState<number>('app-now', () => Date.now());
+
 // Toplam süre — ilk hareket ile son hareket arasındaki fark
-// İçeride/dışarıda kararı yok: sadece "kameraya takıldığı zaman aralığı"
+// İçerideyken: ilk giriş ↔ ŞU AN (canlı)
+// Çıktıysa:   ilk giriş ↔ son çıkış (donuk)
 const totalMinutes = computed(() => {
   if (!props.firstEntry) return 0;
-  // İlk ve son hareket: backend firstEntry/lastExit verir (zamanı en küçük + en büyük)
-  // lastExit yoksa lastActivity zamanını kullan
   const startMs = new Date(props.firstEntry).getTime();
   const endMs = props.lastExit
     ? new Date(props.lastExit).getTime()
-    : new Date(props.lastActivity.activity_time).getTime();
+    : now.value;
   return Math.max(0, Math.floor((endMs - startMs) / 60000));
 });
 
@@ -50,12 +54,13 @@ const totalMinutes = computed(() => {
 const isStudent = computed(() => props.individual.individual_type === 1);
 
 // Ders saati hesabı — sadece öğrenciler için
-// "now" parametresini lastActivity ile geç ki "şu an"a göre değil, son okuma'ya göre hesaplasın
+// İçerideyken now.value (her dakika tikliyor) → "1 derse 40 dk" geri sayar
+// Çıktıysa  lastExit donuk → ders sayısı sabit
 const lessonInfo = computed(() => {
   if (!isStudent.value || !props.firstEntry) return null;
   const lastTime = props.lastExit
     ? new Date(props.lastExit).getTime()
-    : new Date(props.lastActivity.activity_time).getTime();
+    : now.value;
   return calculateLessons(props.firstEntry, props.lastExit, lastTime);
 });
 

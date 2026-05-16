@@ -157,9 +157,12 @@ function isoToHHMM(iso: string): string {
 }
 
 // Birey için ders sayısı (öğrenci değilse veya firstEntry yoksa -1 → sıralamada en sona)
+// İçerideyken now.value ile canlı hesaplanır (sıralama her dakika yenilenir).
 function lessonCount(p: { individual: { individual_type: number }; firstEntry: string | null; lastExit: string | null; lastActivity: { activity_time: string } }): number {
   if (p.individual.individual_type !== 1 || !p.firstEntry) return -1;
-  const lastTime = new Date(p.lastActivity.activity_time).getTime();
+  const lastTime = p.lastExit
+    ? new Date(p.lastExit).getTime()
+    : now.value;
   return calculateLessons(p.firstEntry, p.lastExit, lastTime).lessons;
 }
 
