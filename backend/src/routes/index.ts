@@ -39,7 +39,7 @@ import { join } from 'node:path';
 import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from '../services/cache.js';
 import type { PresenceService } from '../services/presence.js';
-import { calculateLessons } from '../services/lessons.js';
+import { calculateLessons, lessonsFromMinutes } from '../services/lessons.js';
 import type { PollingService, NewActivityEvent } from '../services/polling.js';
 import type { ConfigService } from '../services/config.js';
 import type { AuthService } from '../services/auth.js';
@@ -451,24 +451,22 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
 
         const header = [
           'Birey', 'TC No', 'Tip', 'Engel Kodu',
-          'İlk Giriş', 'Son Çıkış', 'Süre (dk)', 'Ders',
+          'İlk Giriş', 'Son Çıkış',
+          'İçeride (dk)', 'Aralık (dk)', 'Ders',
           'Aktivite Sayısı', 'Manuel Eşleşme',
         ];
 
         const rows = snapshot.presence.map((p) => {
+          // Aralık = ilk giriş - son çıkış (öğle arası vb. dahil, eski metrik)
           const firstMs = p.firstEntry ? new Date(p.firstEntry).getTime() : null;
           const lastMs = p.lastExit ? new Date(p.lastExit).getTime() : null;
-          const duration = firstMs && lastMs
+          const spanMinutes = firstMs && lastMs
             ? Math.max(0, Math.floor((lastMs - firstMs) / 60000))
             : '';
-          // Ders sayısı — sadece bireyler (type 1), personel için anlamlı değil
-          let lessons: number | '' = '';
-          if (p.individual.individual_type === 1 && p.firstEntry) {
-            const reference = p.lastExit
-              ? new Date(p.lastExit).getTime()
-              : new Date(p.lastActivity.activity_time).getTime();
-            lessons = calculateLessons(p.firstEntry, p.lastExit, reference).lessons;
-          }
+          // Ders sayısı — fiilen içeride geçen süreden (insideMinutes), sadece bireyler
+          const lessons = p.individual.individual_type === 1
+            ? lessonsFromMinutes(p.insideMinutes).lessons
+            : '';
           return [
             escape(p.individual.full_name),
             escape(p.individual.identity_number),
@@ -476,7 +474,8 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
             escape(p.individual.disability_code),
             escape(fmtTime(p.firstEntry)),
             escape(fmtTime(p.lastExit)),
-            duration,
+            p.insideMinutes,
+            spanMinutes,
             lessons,
             p.todayActivityCount,
             escape(p.hasManualMatch ? 'Evet' : ''),

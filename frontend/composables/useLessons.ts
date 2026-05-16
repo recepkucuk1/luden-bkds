@@ -19,15 +19,15 @@ export interface LessonResult {
 
 const LESSON_THRESHOLDS = [40, 90, 140] as const;
 
-export function calculateLessons(
-  firstEntry: string,
-  lastExit: string | null,
-  now: number = Date.now(),
+/**
+ * Tercih edilen yeni API: backend `insideMinutes` (entry-exit çiftleri
+ * toplamı, ara çıkışlar HARİÇ) doğrudan dakika olarak verilir.
+ */
+export function lessonsFromMinutes(
+  insideMinutes: number,
+  opts?: { isOngoing?: boolean },
 ): LessonResult {
-  const startMs = new Date(firstEntry).getTime();
-  const endMs = lastExit ? new Date(lastExit).getTime() : now;
-
-  const totalMinutes = Math.max(0, Math.floor((endMs - startMs) / 60000));
+  const totalMinutes = Math.max(0, Math.floor(insideMinutes));
 
   let lessons: 0 | 1 | 2 | 3 = 0;
   if (totalMinutes >= 140) lessons = 3;
@@ -43,9 +43,27 @@ export function calculateLessons(
   return {
     lessons,
     totalMinutes,
-    isOngoing: !lastExit,
+    isOngoing: opts?.isOngoing ?? false,
     minutesToNextLesson,
   };
+}
+
+/**
+ * Eski API — firstEntry-lastExit arası tek aralık. Geriye dönük uyumluluk
+ * için bırakıldı; tercih edilen lessonsFromMinutes(insideMinutes).
+ *
+ * NOT: Bu fonksiyon ara çıkışları (öğle arası vb.) sayıma katar, MEB
+ * raporlama için yanlış sonuç verir. Yeni kayıtlar için kullanma.
+ */
+export function calculateLessons(
+  firstEntry: string,
+  lastExit: string | null,
+  now: number = Date.now(),
+): LessonResult {
+  const startMs = new Date(firstEntry).getTime();
+  const endMs = lastExit ? new Date(lastExit).getTime() : now;
+  const span = (endMs - startMs) / 60000;
+  return lessonsFromMinutes(span, { isOngoing: !lastExit });
 }
 
 /**

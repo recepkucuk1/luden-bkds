@@ -58,6 +58,10 @@ export interface PresenceItem {
   // bazen entry'i exit gibi okuyor; biz sadece ilk-son hareket aralığını gösteriyoruz.
   firstEntry: string | null;
   lastExit: string | null;
+  // Fiilen içeride geçirilen toplam dakika — entry→exit çiftleri toplamı.
+  // Ara çıkışlar (öğle arası vb.) HARİÇ. MEB ders saati buradan hesaplanır.
+  // Kişi hala içerideyse: bugün için "şimdiye kadar", geçmiş için gün sonuna kadar.
+  insideMinutes: number;
   // BRY summary'sinden — o gün manuel eşleştirme yapılmış mı?
   hasManualMatch: boolean;
 }

@@ -38,6 +38,10 @@ interface PresenceItem {
   todayActivityCount: number;
   firstEntry: string | null;
   lastExit: string | null;
+  // Backend-hesaplı: entry→exit çiftleri toplamı (ara çıkışlar HARİÇ).
+  // MEB ders saati buradan; "şu an içeride" için son entry'den şu ana
+  // kadar geçen ek dakika frontend'de eklenir (live ticker).
+  insideMinutes: number;
   hasManualMatch: boolean;
 }
 

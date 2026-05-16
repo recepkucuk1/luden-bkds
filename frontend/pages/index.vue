@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { calculateLessons } from '~/composables/useLessons';
+import { lessonsFromMinutes } from '~/composables/useLessons';
 
 const { snapshot, loading, error, fetchSnapshot, connectWs, disconnectWs, selectedDate, setDate } = useBkds();
 
@@ -157,14 +157,23 @@ function isoToHHMM(iso: string): string {
   return `${h}:${m}`;
 }
 
-// Birey için ders sayısı (öğrenci değilse veya firstEntry yoksa -1 → sıralamada en sona)
-// İçerideyken now.value ile canlı hesaplanır (sıralama her dakika yenilenir).
-function lessonCount(p: { individual: { individual_type: number }; firstEntry: string | null; lastExit: string | null; lastActivity: { activity_time: string } }): number {
-  if (p.individual.individual_type !== 1 || !p.firstEntry) return -1;
-  const lastTime = p.lastExit
-    ? new Date(p.lastExit).getTime()
-    : now.value;
-  return calculateLessons(p.firstEntry, p.lastExit, lastTime).lessons;
+// Birey için ders sayısı (öğrenci değilse -1 → sıralamada en sona).
+// Backend insideMinutes verir; içerideyse son entry'den şu ana kadar geçeni
+// extrapole et (now her dakika tikliyor, sıralama canlı kalır).
+function lessonCount(p: {
+  individual: { individual_type: number };
+  firstEntry: string | null;
+  lastExit: string | null;
+  lastActivity: { activity_type: 'entry' | 'exit'; activity_time: string };
+  insideMinutes?: number;
+}): number {
+  if (p.individual.individual_type !== 1) return -1;
+  let mins = p.insideMinutes ?? 0;
+  if (!p.lastExit && p.lastActivity.activity_type === 'entry') {
+    const lastEntryMs = new Date(p.lastActivity.activity_time).getTime();
+    mins += Math.max(0, Math.floor((now.value - lastEntryMs) / 60000));
+  }
+  return lessonsFromMinutes(mins).lessons;
 }
 
 const filteredList = computed(() => {
@@ -609,6 +618,7 @@ const statusBanner = computed<StatusBanner | null>(() => {
             :today-activity-count="p.todayActivityCount"
             :first-entry="p.firstEntry"
             :last-exit="p.lastExit"
+            :inside-minutes="p.insideMinutes ?? 0"
           />
         </div>
       </section>

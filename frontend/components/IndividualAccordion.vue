@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { calculateLessons, formatDuration } from '~/composables/useLessons';
+import { lessonsFromMinutes, formatDuration } from '~/composables/useLessons';
 
 interface Activity {
   uuid: string;
@@ -22,6 +22,9 @@ interface Props {
   todayActivityCount: number;
   firstEntry: string | null;
   lastExit: string | null;
+  // Backend-hesaplı: entry→exit çiftleri toplamı (ara çıkışlar HARİÇ).
+  // MEB ders saati buradan hesaplanır.
+  insideMinutes: number;
 }
 
 const props = defineProps<Props>();
@@ -34,34 +37,35 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 
 // Index sayfasındaki global "şu an" tick'i — her dakika güncellenir.
-// İçeride olan kişiler için süre hesabı canlı kalır (kamera yeni okuma
-// yapmasa bile geri sayım azalır).
+// İçerideyken backend insideMinutes hesabını "şu ana" extrapole eder:
+// son entry'den itibaren geçen dakikayı insideMinutes'a ekler.
 const now = useState<number>('app-now', () => Date.now());
 
-// Toplam süre — ilk hareket ile son hareket arasındaki fark
-// İçerideyken: ilk giriş ↔ ŞU AN (canlı)
-// Çıktıysa:   ilk giriş ↔ son çıkış (donuk)
-const totalMinutes = computed(() => {
-  if (!props.firstEntry) return 0;
-  const startMs = new Date(props.firstEntry).getTime();
-  const endMs = props.lastExit
-    ? new Date(props.lastExit).getTime()
-    : now.value;
-  return Math.max(0, Math.floor((endMs - startMs) / 60000));
+// İçerideyken backend insideMinutes'i son okumanın anına göre verir;
+// son entry'den şu ana kadar geçen ek dakikayı ekleriz (canlı geri sayım).
+const liveInsideMinutes = computed(() => {
+  let base = props.insideMinutes ?? 0;
+  // Hala içerideyse (lastExit yok), son aktivite entry ise: backend son
+  // aktivite zamanına göre saymış. Şu ana kadar geçen ek dakikayı topla.
+  if (!props.lastExit && props.lastActivity.activity_type === 'entry') {
+    const lastEntryMs = new Date(props.lastActivity.activity_time).getTime();
+    const extra = Math.max(0, Math.floor((now.value - lastEntryMs) / 60000));
+    base += extra;
+  }
+  return base;
 });
+
+// Görüntülenen "toplam süre" — eski span yerine fiilen içeride geçen süre
+const totalMinutes = computed(() => liveInsideMinutes.value);
 
 // Personel için ders hesabı yapılmasın (sadece öğrenciler için)
 const isStudent = computed(() => props.individual.individual_type === 1);
 
 // Ders saati hesabı — sadece öğrenciler için
-// İçerideyken now.value (her dakika tikliyor) → "1 derse 40 dk" geri sayar
-// Çıktıysa  lastExit donuk → ders sayısı sabit
+// liveInsideMinutes her dakika değişir → "1 derse 25 dk" canlı geri sayar
 const lessonInfo = computed(() => {
   if (!isStudent.value || !props.firstEntry) return null;
-  const lastTime = props.lastExit
-    ? new Date(props.lastExit).getTime()
-    : now.value;
-  return calculateLessons(props.firstEntry, props.lastExit, lastTime);
+  return lessonsFromMinutes(liveInsideMinutes.value, { isOngoing: !props.lastExit });
 });
 
 const lessonBadgeClass = computed(() => {
