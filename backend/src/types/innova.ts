@@ -56,12 +56,9 @@ export interface PresenceItem {
   // Bugünün ilk girişi ve son çıkışı (BRY summary'sinden birebir).
   // "İçeride mi/dışarıda mı" hesabı bilinçli olarak yapılmıyor — kameralar
   // bazen entry'i exit gibi okuyor; biz sadece ilk-son hareket aralığını gösteriyoruz.
+  // Ders sayısı UI'da firstEntry → now formülüyle hesaplanır (lastExit yok sayılır).
   firstEntry: string | null;
   lastExit: string | null;
-  // Fiilen içeride geçirilen toplam dakika — entry→exit çiftleri toplamı.
-  // Ara çıkışlar (öğle arası vb.) HARİÇ. MEB ders saati buradan hesaplanır.
-  // Kişi hala içerideyse: bugün için "şimdiye kadar", geçmiş için gün sonuna kadar.
-  insideMinutes: number;
   // BRY summary'sinden — o gün manuel eşleştirme yapılmış mı?
   hasManualMatch: boolean;
 }

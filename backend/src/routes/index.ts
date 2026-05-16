@@ -39,7 +39,7 @@ import { join } from 'node:path';
 import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from '../services/cache.js';
 import type { PresenceService } from '../services/presence.js';
-import { calculateLessons, lessonsFromMinutes } from '../services/lessons.js';
+import { calculateLessons } from '../services/lessons.js';
 import type { PollingService, NewActivityEvent } from '../services/polling.js';
 import type { ConfigService } from '../services/config.js';
 import type { AuthService } from '../services/auth.js';
@@ -451,22 +451,27 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
 
         const header = [
           'Birey', 'TC No', 'Tip', 'Engel Kodu',
-          'İlk Giriş', 'Son Çıkış',
-          'İçeride (dk)', 'Aralık (dk)', 'Ders',
+          'İlk Giriş', 'Son Çıkış', 'Süre (dk)', 'Ders',
           'Aktivite Sayısı', 'Manuel Eşleşme',
         ];
 
+        // Ders sayısı: SADECE ilk giriş referans (lastExit yok sayılır).
+        // Bugünse Date.now(), geçmiş günse o günün 23:59:59+03'ü.
+        const now = snapshot.isToday
+          ? Date.now()
+          : new Date(`${snapshot.date}T23:59:59+03:00`).getTime();
+
         const rows = snapshot.presence.map((p) => {
-          // Aralık = ilk giriş - son çıkış (öğle arası vb. dahil, eski metrik)
           const firstMs = p.firstEntry ? new Date(p.firstEntry).getTime() : null;
           const lastMs = p.lastExit ? new Date(p.lastExit).getTime() : null;
-          const spanMinutes = firstMs && lastMs
+          const duration = firstMs && lastMs
             ? Math.max(0, Math.floor((lastMs - firstMs) / 60000))
             : '';
-          // Ders sayısı — fiilen içeride geçen süreden (insideMinutes), sadece bireyler
-          const lessons = p.individual.individual_type === 1
-            ? lessonsFromMinutes(p.insideMinutes).lessons
-            : '';
+          // Ders: firstEntry → now (lastExit yok sayılır, kullanıcı kararı)
+          let lessons: number | '' = '';
+          if (p.individual.individual_type === 1 && p.firstEntry) {
+            lessons = calculateLessons(p.firstEntry, null, now).lessons;
+          }
           return [
             escape(p.individual.full_name),
             escape(p.individual.identity_number),
@@ -474,8 +479,7 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
             escape(p.individual.disability_code),
             escape(fmtTime(p.firstEntry)),
             escape(fmtTime(p.lastExit)),
-            p.insideMinutes,
-            spanMinutes,
+            duration,
             lessons,
             p.todayActivityCount,
             escape(p.hasManualMatch ? 'Evet' : ''),

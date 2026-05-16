@@ -12,7 +12,7 @@
 
 import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from './cache.js';
-import { calculateLessons, computeInsideMinutes, lessonsFromMinutes } from './lessons.js';
+import { calculateLessons } from './lessons.js';
 import type {
   InnovaIndividual,
   InnovaActivity,
@@ -54,14 +54,6 @@ function isTodayInTurkey(date: string): boolean {
 
 function turkishToday(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
-}
-
-/**
- * YYYY-MM-DD → o günün TR saati ile 23:59:59 ms. Geçmiş günler için "hala
- * içeride" durumunda insideMinutes hesabı bu noktayı limit alır.
- */
-function endOfDayMs(date: string): number {
-  return new Date(`${date}T23:59:59+03:00`).getTime();
 }
 
 /**
@@ -156,18 +148,12 @@ export class PresenceService {
       const rawLastExit = sum?.last_exit ?? last.activity_time;
       const lastExit = acts.length > 1 && rawLastExit !== firstEntry ? rawLastExit : null;
 
-      // Fiilen içeride geçen süre — entry→exit çiftleri toplamı (ara çıkışlar HARİÇ).
-      // Bugün için ve hala içerideyse "şu an"a, geçmiş gün için "gün sonuna" sayar.
-      const insideRef = isToday ? Date.now() : endOfDayMs(date);
-      const insideMinutes = computeInsideMinutes(acts, insideRef);
-
       presence.push({
         individual: ind,
         lastActivity: last,
         todayActivityCount: acts.length,
         firstEntry,
         lastExit,
-        insideMinutes,
         hasManualMatch: !!sum?.has_manuel_match,
       });
     }
