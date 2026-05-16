@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { lessonsFromMinutes, formatDuration } from '~/composables/useLessons';
-// NOT: Süre/ders hesabı = lastActivity - firstEntry
-// Yani "ilk okunan kamera değeri ↔ son okunan kamera değeri" arası.
-// Bu en temiz yaklaşım — yeni okuma gelmezse süre artmaz (kişi gerçekten
-// orada değilse fake "hala içeride" extrapolation yapılmaz).
-// lastExit yok sayılır; "son okuma" entry de olabilir exit de.
+// NOT: Süre/ders hesabı hibrit yaklaşım:
+//   - Kişi ÇIKIŞ yapmışsa (lastExit var): lastActivity.activity_time
+//     (= son okuma = çıkış zamanı, dondurulmuş)
+//   - Kişi İÇERİDE (lastExit yok): now (sistem saati, canlı geri sayım)
+// Bu sayede içerideki kişi için "1 derse 25 dk" gerçek zamanlı azalır.
 
 interface Activity {
   uuid: string;
@@ -38,19 +38,26 @@ const activities = ref<Activity[]>([]);
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 
-// Görüntülenen "toplam süre" — ilk okuma ↔ son okuma arası
-// (lastActivity.activity_time her zaman en son kamera okumasının zamanı)
+// Global "şu an" tick'i — index.vue'da her dakika güncelleniyor.
+// İçerideki kişi için süre canlı artar, geri sayım azalır.
+const now = useState<number>('app-now', () => Date.now());
+
+// Görüntülenen "toplam süre"
+// - Çıkış yapmışsa: lastActivity (donuk, gerçek çıkış zamanı)
+// - İçerideyse:     now (canlı tick, her dakika)
 const totalMinutes = computed(() => {
   if (!props.firstEntry) return 0;
   const startMs = new Date(props.firstEntry).getTime();
-  const endMs = new Date(props.lastActivity.activity_time).getTime();
+  const endMs = props.lastExit
+    ? new Date(props.lastActivity.activity_time).getTime()
+    : now.value;
   return Math.max(0, Math.floor((endMs - startMs) / 60000));
 });
 
 // Personel için ders hesabı yapılmasın (sadece öğrenciler için)
 const isStudent = computed(() => props.individual.individual_type === 1);
 
-// Ders saati hesabı — firstEntry ↔ lastActivity (her ikisi de gerçek kamera okumaları)
+// Ders saati hesabı — totalMinutes'a bağlı (yukarıdaki hibrit mantık)
 const lessonInfo = computed(() => {
   if (!isStudent.value || !props.firstEntry) return null;
   return lessonsFromMinutes(totalMinutes.value, { isOngoing: !props.lastExit });
