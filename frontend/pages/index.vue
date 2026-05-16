@@ -158,15 +158,16 @@ function isoToHHMM(iso: string): string {
 }
 
 // Birey için ders sayısı (öğrenci değilse veya firstEntry yoksa -1 → sıralamada en sona).
-// Sadece giriş saatini referans alır: firstEntry → now (lastExit yok sayılır).
-// now her dakika tikliyor → sıralama canlı kalır.
+// firstEntry ↔ lastActivity arası — gerçek kamera okumalarına dayalı, stabil hesap.
 function lessonCount(p: {
   individual: { individual_type: number };
   firstEntry: string | null;
+  lastActivity: { activity_time: string };
 }): number {
   if (p.individual.individual_type !== 1 || !p.firstEntry) return -1;
   const startMs = new Date(p.firstEntry).getTime();
-  const mins = Math.max(0, Math.floor((now.value - startMs) / 60000));
+  const endMs = new Date(p.lastActivity.activity_time).getTime();
+  const mins = Math.max(0, Math.floor((endMs - startMs) / 60000));
   return lessonsFromMinutes(mins).lessons;
 }
 

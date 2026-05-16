@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { lessonsFromMinutes, formatDuration } from '~/composables/useLessons';
-// NOT: Ders sayısı hesabı bilinçli olarak SADECE giriş saatine bakar.
-// firstEntry → now (lastExit yoksayılır). Kullanıcı kararı: ara çıkışlar
-// veya tam çıkış olsa bile "giriş kamerasından beri geçen süre" referans alınır.
+// NOT: Süre/ders hesabı = lastActivity - firstEntry
+// Yani "ilk okunan kamera değeri ↔ son okunan kamera değeri" arası.
+// Bu en temiz yaklaşım — yeni okuma gelmezse süre artmaz (kişi gerçekten
+// orada değilse fake "hala içeride" extrapolation yapılmaz).
+// lastExit yok sayılır; "son okuma" entry de olabilir exit de.
 
 interface Activity {
   uuid: string;
@@ -36,23 +38,19 @@ const activities = ref<Activity[]>([]);
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 
-// Index sayfasındaki global "şu an" tick'i — her dakika güncellenir.
-// Ders saati canlı geri sayım: firstEntry → now arası her dakika artar.
-const now = useState<number>('app-now', () => Date.now());
-
-// Görüntülenen "toplam süre" — ilk giriş'ten şu ana kadar (lastExit yok sayılır)
+// Görüntülenen "toplam süre" — ilk okuma ↔ son okuma arası
+// (lastActivity.activity_time her zaman en son kamera okumasının zamanı)
 const totalMinutes = computed(() => {
   if (!props.firstEntry) return 0;
   const startMs = new Date(props.firstEntry).getTime();
-  return Math.max(0, Math.floor((now.value - startMs) / 60000));
+  const endMs = new Date(props.lastActivity.activity_time).getTime();
+  return Math.max(0, Math.floor((endMs - startMs) / 60000));
 });
 
 // Personel için ders hesabı yapılmasın (sadece öğrenciler için)
 const isStudent = computed(() => props.individual.individual_type === 1);
 
-// Ders saati hesabı — sadece öğrenciler için
-// Sadece giriş saatini referans alır: firstEntry → now
-// Çıkış kaydı olsa bile yoksayılır (kullanıcı kararı).
+// Ders saati hesabı — firstEntry ↔ lastActivity (her ikisi de gerçek kamera okumaları)
 const lessonInfo = computed(() => {
   if (!isStudent.value || !props.firstEntry) return null;
   return lessonsFromMinutes(totalMinutes.value, { isOngoing: !props.lastExit });

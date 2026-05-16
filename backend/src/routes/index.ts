@@ -455,22 +455,17 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
           'Aktivite Sayısı', 'Manuel Eşleşme',
         ];
 
-        // Ders sayısı: SADECE ilk giriş referans (lastExit yok sayılır).
-        // Bugünse Date.now(), geçmiş günse o günün 23:59:59+03'ü.
-        const now = snapshot.isToday
-          ? Date.now()
-          : new Date(`${snapshot.date}T23:59:59+03:00`).getTime();
-
+        // Süre ve ders sayısı: firstEntry ↔ lastActivity (en son kamera okuması)
+        // Gerçek okuma noktalarına dayalı, "şu an"a extrapolation yapmıyor.
         const rows = snapshot.presence.map((p) => {
           const firstMs = p.firstEntry ? new Date(p.firstEntry).getTime() : null;
-          const lastMs = p.lastExit ? new Date(p.lastExit).getTime() : null;
-          const duration = firstMs && lastMs
+          const lastMs = new Date(p.lastActivity.activity_time).getTime();
+          const duration = firstMs !== null
             ? Math.max(0, Math.floor((lastMs - firstMs) / 60000))
             : '';
-          // Ders: firstEntry → now (lastExit yok sayılır, kullanıcı kararı)
           let lessons: number | '' = '';
-          if (p.individual.individual_type === 1 && p.firstEntry) {
-            lessons = calculateLessons(p.firstEntry, null, now).lessons;
+          if (p.individual.individual_type === 1 && p.firstEntry && firstMs !== null) {
+            lessons = calculateLessons(p.firstEntry, null, lastMs).lessons;
           }
           return [
             escape(p.individual.full_name),
