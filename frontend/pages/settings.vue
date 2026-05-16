@@ -515,7 +515,7 @@ const notInSecureContext = computed(() => {
         <!-- Plan başlığı (her zaman görünür, kullanıcıya ne ödediğini hatırlatır) -->
         <div v-if="license.status.value?.key" class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-200">Plan</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">BRY Takip — 279 ₺/ay</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">BRY Takip — 249 ₺/ay</span>
         </div>
 
         <!-- Abonelik durumu -->
@@ -543,7 +543,7 @@ const notInSecureContext = computed(() => {
             </span>
           </div>
           <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pl-1">
-            Trial bittikten sonra otomatik <strong>279 ₺ aylık tahsilat</strong> başlar.
+            Trial bittikten sonra otomatik <strong>249 ₺ aylık tahsilat</strong> başlar.
             Trial içinde iptal ederseniz ücret çekilmez.
           </p>
         </template>
@@ -637,7 +637,7 @@ const notInSecureContext = computed(() => {
             class="w-full px-3 py-2 bg-brand text-white text-sm font-medium rounded-lg active:opacity-80"
             @click="license.openCheckoutPage()"
           >
-            💳 Aboneliği Başlat — 279 ₺/ay
+            💳 Aboneliği Başlat — 249 ₺/ay
           </button>
           <!-- ACTIVE / CANCELED: Yönet (web panele yönlendir) -->
           <button
