@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { snapshot, wsConnected } = useBkds();
+const auth = useAuth();
 
 const time = ref('');
 const updateTime = () => {
@@ -33,6 +34,18 @@ onUnmounted(() => clearInterval(timer));
           <span class="text-gray-500 dark:text-gray-400">{{ wsConnected ? 'Canlı' : 'Bekleniyor' }}</span>
         </div>
         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ time }}</span>
+        <NuxtLink
+          v-if="auth.isLocalhost()"
+          to="/telefon-ekle"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+          aria-label="Telefon Ekle"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="12" height="20" x="6" y="2" rx="2"/>
+            <path d="M12 18h.01"/>
+            <path d="M16 6h2.5a1.5 1.5 0 0 1 1.5 1.5v0a1.5 1.5 0 0 1-1.5 1.5H16" transform="rotate(180 18 7.5)"/>
+          </svg>
+        </NuxtLink>
         <NuxtLink
           to="/istatistik"
           class="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"

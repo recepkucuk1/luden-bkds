@@ -7,10 +7,21 @@ definePageMeta({
 const { setToken } = useAuth();
 const { backendUrl } = useBkds();
 const router = useRouter();
+const route = useRoute();
 
 const code = ref('');
 const status = ref<'idle' | 'submitting' | 'error'>('idle');
 const errorMsg = ref<string | null>(null);
+
+// QR kodla geldiyse ?code=XXXXXX query'sini auto-fill et + auto-submit
+onMounted(() => {
+  const q = String(route.query.code ?? '').replace(/\D/g, '').slice(0, 6);
+  if (q.length === 6) {
+    code.value = q;
+    // Bir tick sonra submit — DOM ve auth state'in hazır olması için
+    nextTick(() => { void submit(); });
+  }
+});
 
 const onInput = (e: Event) => {
   // Sadece rakam, max 6 hane
