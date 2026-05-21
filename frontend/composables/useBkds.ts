@@ -57,14 +57,72 @@ export interface Snapshot {
   hourlyDistribution: number[]; // 24 eleman, her TR saatinin (0-23) aktivite sayısı
 }
 
+// ─── Backend port keşfi (sadece Tauri/localhost senaryosu) ──────────────
+// Backend normalde 8787'de; o port doluysa 8788+'a düşebilir (server.ts
+// port fallback). Bundled Tauri webview'i hangi portta olduğunu bilmediği
+// için startup'ta /healthz ile 8787..8796 aralığını tarar. İlk yanıt veren
+// porta kilitlenir. Telefon senaryosunda gerek yok (loc.host doğru portu verir).
+const BACKEND_PORT_MIN = 8787;
+const BACKEND_PORT_MAX = 8796;
+let _backendPort = BACKEND_PORT_MIN;
+
+export function getBackendPort(): number {
+  return _backendPort;
+}
+
+let _discoveryDone = false;
+
+async function probeRange(): Promise<boolean> {
+  for (let p = BACKEND_PORT_MIN; p <= BACKEND_PORT_MAX; p++) {
+    try {
+      const r = await fetch(`http://localhost:${p}/healthz`, {
+        signal: AbortSignal.timeout(800),
+      });
+      if (r.ok) {
+        _backendPort = p;
+        return true;
+      }
+    } catch {
+      /* bu port yanıt vermedi, sıradakine geç */
+    }
+  }
+  return false;
+}
+
+export async function ensureBackendPort(): Promise<void> {
+  if (_discoveryDone || typeof window === 'undefined') return;
+  const loc = window.location;
+  const isLocal =
+    loc.protocol === 'tauri:' ||
+    loc.hostname === 'tauri.localhost' ||
+    loc.hostname === 'localhost' ||
+    loc.hostname === '127.0.0.1';
+  if (!isLocal) {
+    _discoveryDone = true; // telefon: probe gereksiz
+    return;
+  }
+  // Mutlu yol: 8787 ayakta → ilk round anında bulur, gecikme yok.
+  // Backend henüz açılmadıysa (spawn gecikmesi) kısa aralıklarla ~3sn dene.
+  const ROUNDS = 6;
+  for (let round = 0; round < ROUNDS; round++) {
+    if (await probeRange()) {
+      _discoveryDone = true;
+      return;
+    }
+    await new Promise((res) => setTimeout(res, 500));
+  }
+  // Bulunamadı → default 8787 kalır; _discoveryDone false, sonra tekrar denenebilir.
+}
+
 export const useBkds = () => {
   const config = useRuntimeConfig();
   const auth = useAuth();
 
   // Backend URL hesaplama — sayfa açıldığı host'u baz alır
-  // - Tauri içinde (localhost): localhost:8787
-  // - Telefondan Mac-IP:3000'den açıldı: Mac-IP:8787
-  // - Bu sayede tek build her senaryoda doğru çalışır
+  // - Tauri içinde (bundled webview): localhost:<keşfedilen port>
+  //     Backend 8787 doluysa 8788+'a düşebilir; startup probe ile bulunur.
+  // - Telefondan açıldı: frontend zaten backend'den yüklendiği için loc.host
+  //     gerçek portu içerir (ör. Mac-IP:8788) — otomatik doğru.
   const computeBackendUrl = (): string => {
     if (typeof window !== 'undefined') {
       const loc = window.location;
@@ -74,9 +132,10 @@ export const useBkds = () => {
         loc.hostname === 'localhost' ||
         loc.hostname === '127.0.0.1'
       ) {
-        return 'http://localhost:8787';
+        return `http://localhost:${getBackendPort()}`;
       }
-      return `${loc.protocol}//${loc.hostname}:8787`;
+      // Telefon: frontend backend'den geldi → loc.host = doğru host:port
+      return `${loc.protocol}//${loc.host}`;
     }
     return config.public.backendUrl || 'http://localhost:8787';
   };

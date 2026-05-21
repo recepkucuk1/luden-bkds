@@ -27,8 +27,28 @@ import type { InnovaBryAdapter } from '../adapters/innova.js';
 import type { CacheService } from './cache.js';
 import type { InnovaActivity, InnovaIndividual } from '../types/innova.js';
 
-const DEFAULT_INTERVAL_MS = 5000;  // 5 saniye
+const DEFAULT_INTERVAL_MS = 5000;  // 5 saniye (mesai saatleri)
+const OFFHOURS_INTERVAL_MS = 60_000; // 1 dakika (gece + pazar)
 const MAX_BACKOFF_MS = 5 * 60 * 1000; // 5 dakika
+
+/**
+ * Şu an "mesai dışı" mı? (TR saati) — gece 22:00–06:59 arası veya Pazar.
+ * Bu saatlerde kurum kapalı; 5sn yerine 1dk'da bir yoklayarak hem BRY
+ * sunucusunu hem belleği yorma. İlk mesai saatinde otomatik 5sn'ye döner.
+ */
+function isOffHours(now: Date = new Date()): boolean {
+  const trHour = Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Istanbul', hour: '2-digit', hour12: false,
+    }).format(now),
+  );
+  const trWeekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Istanbul', weekday: 'short',
+  }).format(now); // "Sun", "Mon", ...
+  const isNight = trHour >= 22 || trHour < 7;
+  const isSunday = trWeekday === 'Sun';
+  return isNight || isSunday;
+}
 
 // EventEmitter default 10 listener uyarısı verir. Birden fazla telefon WS'ye bağlanınca
 // limit aşılır. Pilot için 50 yeterli; daha büyük dağıtımda artırılabilir.
@@ -82,8 +102,16 @@ export class PollingService extends EventEmitter {
     if (this.running) return;
     this.running = true;
     this.consecutiveErrors = 0;
-    this.currentDelayMs = this.intervalMs;
+    this.currentDelayMs = this.effectiveIntervalMs();
     this.scheduleNextPoll(0); // İlk poll'u hemen yap
+  }
+
+  /**
+   * Normal (hata yokken) interval — mesai saatlerinde 5sn, mesai dışında 1dk.
+   * Backoff bunun üzerine biner (hata varsa daha da yavaşlar).
+   */
+  private effectiveIntervalMs(): number {
+    return isOffHours() ? OFFHOURS_INTERVAL_MS : this.intervalMs;
   }
 
   stop(): void {
@@ -121,9 +149,9 @@ export class PollingService extends EventEmitter {
       this.timer = null;
       void this.poll()
         .then(() => {
-          // Başarı: sayaçları sıfırla, normal interval'a dön
+          // Başarı: sayaçları sıfırla, normal interval'a dön (mesai/gece duyarlı)
           this.consecutiveErrors = 0;
-          this.currentDelayMs = this.intervalMs;
+          this.currentDelayMs = this.effectiveIntervalMs();
           this.lastSuccessAt = new Date();
           this.totalPolls++;
         })

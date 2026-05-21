@@ -10,6 +10,7 @@
 
 import 'dotenv/config';
 import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
@@ -23,7 +24,8 @@ import { AuthService } from './services/auth.js';
 import { registerRoutes } from './routes/index.js';
 
 // ─── Config ─────────────────────────────────────────────────
-const PORT = Number(process.env.PORT ?? 8787);
+const BASE_PORT = Number(process.env.PORT ?? 8787);
+const MAX_PORT_TRIES = 10; // 8787..8796 arasını dene
 // Veri klasörü:
 // - Tauri içinde: LUDEN_DATA_DIR env ile gelir (Rust'ın app_data_dir'i)
 //   örn: ~/Library/Application Support/com.brytakip.bkds/
@@ -188,8 +190,39 @@ await registerRoutes(app, {
 });
 
 // ─── Start ──────────────────────────────────────────────────
+// Port fallback: 8787 başka bir yazılım tarafından kullanılıyorsa (EADDRINUSE)
+// sıradaki boş portu dene. Aksi halde backend sessizce hiç açılmaz = kullanıcı
+// "uygulama çalışmıyor" der, en sinir bozucu destek tipi. Bulunan portu
+// process.env.PORT'a yaz ki /api/network/info ve telefon eşleme URL'i doğru olsun.
+async function listenWithFallback(): Promise<number> {
+  for (let i = 0; i < MAX_PORT_TRIES; i++) {
+    const tryPort = BASE_PORT + i;
+    try {
+      await app.listen({ port: tryPort, host: '0.0.0.0' });
+      return tryPort;
+    } catch (err: any) {
+      if (err?.code === 'EADDRINUSE' && i < MAX_PORT_TRIES - 1) {
+        app.log.warn(`⚠ Port ${tryPort} dolu, ${tryPort + 1} deneniyor...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`Boş port bulunamadı (${BASE_PORT}–${BASE_PORT + MAX_PORT_TRIES - 1})`);
+}
+
 try {
-  await app.listen({ port: PORT, host: '0.0.0.0' });
+  const PORT = await listenWithFallback();
+  // Gerçekte bağlanılan portu env'e yaz — diğer servisler (network/info) bunu okur
+  process.env.PORT = String(PORT);
+  // Tauri/teşhis için port dosyasına da yaz (best-effort)
+  try {
+    writeFileSync(join(DATA_DIR, '.port'), String(PORT), 'utf8');
+  } catch {/* yazılamadıysa sorun değil */}
+
+  if (PORT !== BASE_PORT) {
+    app.log.warn(`ℹ Varsayılan port ${BASE_PORT} doluydu; ${PORT} portunda çalışıyor.`);
+  }
   app.log.info(`✓ Hazır. Telefondan: http://<bilgisayarınızın-IP>:${PORT}/`);
   app.log.info(`📲 Bildirim: yerel ağ (Notification API)`);
   app.log.info(`🔐 Şifre saklama: ${configService.describeSecretStore()}`);
