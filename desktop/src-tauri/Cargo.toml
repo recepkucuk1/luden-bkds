@@ -1,8 +1,8 @@
 [package]
 name = "brytakip-desktop"
-version = "0.3.7"
+version = "0.6.5"
 description = "BRY Takip Desktop"
-authors = ["LudenLab"]
+authors = ["Luden"]
 edition = "2021"
 
 [lib]

@@ -94,10 +94,28 @@ jobs:
           npm run build:node
 
       # ───── Tauri build (imzalama env var'ları aktarır) ─────
+      # macOS'ta bundle_dmg.sh, headless runner'da Finder/hdiutil flakeliği
+      # nedeniyle bazen tek seferde fail eder (.app derlenmiş olsa bile DMG
+      # ve sonrasındaki updater .app.tar.gz üretilmez). Retry: derleme
+      # cache'li olduğu için 2. deneme sadece bundle adımını tekrarlar (~hızlı).
       - name: Build Tauri app
+        shell: bash
         run: |
           cd desktop
-          npx tauri build --target ${{ matrix.target }}
+          attempt=1
+          max=3
+          until [ $attempt -gt $max ]; do
+            echo "▶ tauri build (deneme $attempt/$max)"
+            if npx tauri build --target ${{ matrix.target }}; then
+              echo "✓ build başarılı"
+              exit 0
+            fi
+            echo "✗ deneme $attempt başarısız, tekrar denenecek"
+            attempt=$((attempt + 1))
+            sleep 8
+          done
+          echo "✗ tüm denemeler başarısız"
+          exit 1
 
       # ───── Artifacts: Mac (.dmg + .app.tar.gz + .sig) ──────
       # Tauri imzalama açıkken `.app.tar.gz` (auto-updater için) ve `.sig` üretilir.
