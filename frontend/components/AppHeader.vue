@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const { snapshot, wsConnected } = useBkds();
 const auth = useAuth();
 
 const time = ref('');
@@ -26,13 +25,7 @@ onUnmounted(() => clearInterval(timer));
         <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">Anlık Durum</h1>
       </div>
       <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 text-xs">
-          <span
-            class="w-2 h-2 rounded-full"
-            :class="wsConnected ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
-          />
-          <span class="text-gray-500 dark:text-gray-400">{{ wsConnected ? 'Canlı' : 'Bekleniyor' }}</span>
-        </div>
+        <ConnectionStatus />
         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ time }}</span>
         <NuxtLink
           v-if="auth.isLocalhost()"

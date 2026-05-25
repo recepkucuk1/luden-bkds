@@ -19,3 +19,45 @@ html.dark, html.dark body {
   background: #0b1115;
   color: #e7eaee;
 }
+
+/* iOS safe-area: alt navigasyon çubuğu / Dynamic Island altında içerik kalmasın.
+   Sayfa container'ları zaten env(safe-area-inset-*) padding kullanabilir;
+   bu fallback gövdeye varsayılan koruma verir. */
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* iOS Safari'de pull-to-refresh devre dışı — sayfa WS ile zaten canlı,
+   yanlışlıkla refresh kullanıcı bağlamını kaybeder. */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
+/* Tüm tıklanabilir kontrollerde double-tap zoom gecikmesini kaldır.
+   button + a + role=button kapsama alındı. */
+button, a, [role='button'], summary {
+  touch-action: manipulation;
+}
+
+/* iOS form inputlarında 16px altı font auto-zoom tetikler — minimum 16px. */
+input, select, textarea {
+  font-size: 16px;
+}
+@media (min-width: 768px) {
+  input, select, textarea {
+    font-size: inherit;
+  }
+}
+
+/* PWA standalone'da metin seçimi sadece input/textarea'da olsun —
+   ders saati rozetleri veya birey kartlarına uzun basınca metin seçilmesin. */
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input, textarea, [contenteditable='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}

@@ -1,3 +1,6 @@
+# Lokal araç ayarları (Claude Code launch.json vb.)
+.claude/
+
 # Dependencies
 node_modules/
 

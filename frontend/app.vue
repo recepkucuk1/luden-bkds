@@ -14,4 +14,6 @@ onUnmounted(() => {
 
 <template>
   <NuxtPage />
+  <InstallPromptSheet />
+  <NotificationOptIn />
 </template>

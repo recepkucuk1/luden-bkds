@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BRY Takip · Bağlantı yok</title>
+  <meta name="theme-color" content="#0f6e56">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --brand: #0f6e56;
+      --brand-dark: #0a4734;
+      --bg: #ffffff;
+      --fg: #111827;
+      --muted: #6b7280;
+      --card: #f9fafb;
+      --border: #e5e7eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --fg: #f3f4f6;
+        --muted: #9ca3af;
+        --card: #111827;
+        --border: #1f2937;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card {
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon-circle {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      border-radius: 20px;
+      background: var(--brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+    .checklist {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .checklist li {
+      font-size: 13px;
+      color: var(--fg);
+      margin: 6px 0;
+      padding-left: 22px;
+      position: relative;
+      list-style: none;
+      line-height: 1.5;
+    }
+    .checklist li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--brand);
+      border-radius: 50%;
+    }
+    .checklist ul { padding: 0; margin: 0; }
+    button {
+      width: 100%;
+      padding: 12px 20px;
+      background: var(--brand);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button:active { background: var(--brand-dark); }
+    .footer {
+      margin-top: 16px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-circle">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+        <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+        <line x1="2" y1="2" x2="22" y2="22"/>
+      </svg>
+    </div>
+    <h1>Bağlantı kurulamadı</h1>
+    <p>BRY Takip uygulamasına ulaşılamıyor. Şunları kontrol edin:</p>
+    <ul class="checklist">
+      <li>Kurum WiFi'sine bağlı mısınız?</li>
+      <li>Kurumdaki bilgisayar açık mı?</li>
+      <li>BRY Takip uygulaması çalışıyor mu?</li>
+    </ul>
+    <button onclick="location.reload()" type="button">Tekrar dene</button>
+    <p class="footer">© LudenLab · brytakip.com</p>
+  </div>
+  <script>
+    // Ağ geri gelirse otomatik yenile (offline shell takılı kalmasın)
+    window.addEventListener('online', () => location.reload());
+  </script>
+</body>
+</html>
