@@ -57,7 +57,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://brytakip.com/updates/latest.json",
+        "https://bry.ludenlab.com/updates/latest.json",
         "https://github.com/recepkucuk1/luden-bkds/releases/latest/download/latest.json"
       ],
       "dialog": false,

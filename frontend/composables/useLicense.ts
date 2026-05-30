@@ -21,7 +21,7 @@
  *   PRO       — 599 ₺/ay (full feature)
  */
 
-const API_BASE = 'https://brytakip.com';
+const API_BASE = 'https://bry.ludenlab.com';
 const STORAGE_KEY = 'brytakip-license';
 const MACHINE_ID_KEY = 'brytakip-machine-id';
 const REVERIFY_INTERVAL_MS = 60 * 60 * 1000; // 1 saat — admin/iyzico iptalleri makul süre içinde yakalansın
@@ -134,12 +134,12 @@ export const useLicense = () => {
   const openCheckoutPage = async () => {
     const email = status.value?.kurumEmail ?? '';
     const key = status.value?.key ?? '';
-    let url = 'https://brytakip.com/#/signup';
+    let url = 'https://bry.ludenlab.com/#/signup';
     if (email) {
       // lk: panel status çağrısında kimlik kanıtı — kurum PII + lisans anahtarı erişimini açar
       const qs = new URLSearchParams({ email });
       if (key) qs.set('lk', key);
-      url = `https://brytakip.com/?${qs.toString()}#/panel`;
+      url = `https://bry.ludenlab.com/?${qs.toString()}#/panel`;
     }
 
     if (typeof window === 'undefined') return;
