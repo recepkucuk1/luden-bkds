@@ -5,7 +5,7 @@
  *  1. Kullanıcı SaaS panelinden (brytakip.com) signup yapar
  *  2. Recep o kuruma `BRY-XXXX-XXXX-XXXX-XXXX` formatında lisans üretir
  *  3. Kullanıcı bu key'i settings → Lisans bölümünde girer
- *  4. `verify(key)` brytakip.com/api/license/verify'a POST atar
+ *  4. `verify(key)` brytakip.ludenlab.com/api/license/verify'a POST atar
  *  5. Backend cihaza bağlar (ilk verify'de machineId set), status döner
  *  6. Sonuç localStorage'da cache'lenir; uygulama boot'ta `reverify()` yapar
  *
@@ -21,7 +21,7 @@
  *   PRO       — 599 ₺/ay (full feature)
  */
 
-const API_BASE = 'https://brytakip.com';
+const API_BASE = 'https://brytakip.ludenlab.com';
 const STORAGE_KEY = 'brytakip-license';
 const MACHINE_ID_KEY = 'brytakip-machine-id';
 const REVERIFY_INTERVAL_MS = 60 * 60 * 1000; // 1 saat — admin/iyzico iptalleri makul süre içinde yakalansın
@@ -134,12 +134,12 @@ export const useLicense = () => {
   const openCheckoutPage = async () => {
     const email = status.value?.kurumEmail ?? '';
     const key = status.value?.key ?? '';
-    let url = 'https://brytakip.com/#/signup';
+    let url = 'https://brytakip.ludenlab.com/#/signup';
     if (email) {
       // lk: panel status çağrısında kimlik kanıtı — kurum PII + lisans anahtarı erişimini açar
       const qs = new URLSearchParams({ email });
       if (key) qs.set('lk', key);
-      url = `https://brytakip.com/?${qs.toString()}#/panel`;
+      url = `https://brytakip.ludenlab.com/?${qs.toString()}#/panel`;
     }
 
     if (typeof window === 'undefined') return;
