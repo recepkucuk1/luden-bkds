@@ -672,7 +672,7 @@ const notInSecureContext = computed(() => {
           class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pt-2 border-t border-gray-200 dark:border-gray-700"
         >
           Lisans anahtarınız yoksa
-          <a href="https://brytakip.ludenlab.com" target="_blank" class="text-brand underline">brytakip.ludenlab.com</a>
+          <a href="https://brytakip.com" target="_blank" class="text-brand underline">brytakip.com</a>
           adresinden kurumunuzu kaydederek alabilirsiniz.
         </p>
       </div>
