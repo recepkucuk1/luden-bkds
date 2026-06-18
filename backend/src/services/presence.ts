@@ -72,6 +72,35 @@ export interface WeekStats {
   dailyCounts: { date: string; count: number }[];  // her gün kaç kişi (sparkline için)
 }
 
+export interface CalendarMonthDay {
+  date: string;       // YYYY-MM-DD (TR günü)
+  students: number;   // o gün gelen, individual_type===1 olan benzersiz birey sayısı
+  lessons: number;    // o gün öğrencilerin toplam ders sayısı
+  isToday: boolean;
+}
+
+export interface CalendarMonthPayload {
+  month: string;      // YYYY-MM
+  today: string;      // YYYY-MM-DD (TR)
+  days: CalendarMonthDay[];
+}
+
+export interface IndividualMonthDay {
+  date: string;
+  lessons: number;
+  firstEntry: string;
+  lastExit: string | null;
+  durationMinutes: number | null;
+}
+
+export interface IndividualMonthPayload {
+  uuid: string;
+  month: string;
+  fullName: string;
+  individualType: number;
+  days: IndividualMonthDay[];  // yalnız geldiği günler
+}
+
 export class PresenceService {
   constructor(
     private adapter: InnovaBryAdapter,
@@ -469,6 +498,93 @@ export class PresenceService {
       a.full_name.localeCompare(b.full_name, 'tr'),
     );
     return rows;
+  }
+
+  /**
+   * Ay-bazlı gün-özeti cache'i. Geçmiş ay → süresiz (veri değişmez);
+   * geçerli ay → 60 sn TTL (bugün canlı değişir).
+   */
+  private monthSummariesCache = new Map<
+    string,
+    { fetchedAt: number; perDay: Map<string, InnovaDailySummary[]> }
+  >();
+
+  private async getMonthSummaries(month: string): Promise<Map<string, InnovaDailySummary[]>> {
+    const today = turkishToday();
+    const currentMonth = today.slice(0, 7);
+    const isPast = month < currentMonth;
+    const cached = this.monthSummariesCache.get(month);
+    if (cached && (isPast || Date.now() - cached.fetchedAt < 60_000)) {
+      return cached.perDay;
+    }
+
+    const [yearStr, monthStr] = month.split('-');
+    const year = Number(yearStr);
+    const monthNum = Number(monthStr);
+    const lastDay = new Date(year, monthNum, 0).getDate();
+
+    const dates: string[] = [];
+    for (let d = 1; d <= lastDay; d++) {
+      const dateStr = `${yearStr}-${monthStr.padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+      if (dateStr > today) break; // gelecek günler çekilmez
+      dates.push(dateStr);
+    }
+
+    const summaries = await Promise.all(
+      dates.map((date) =>
+        this.adapter
+          .getTodayActivitySummary({
+            pageSize: 200,
+            date: isTodayInTurkey(date) ? undefined : date,
+          })
+          .then((r) => r.results)
+          .catch(() => [] as InnovaDailySummary[]),
+      ),
+    );
+
+    const perDay = new Map<string, InnovaDailySummary[]>();
+    dates.forEach((date, i) => perDay.set(date, summaries[i]));
+    this.monthSummariesCache.set(month, { fetchedAt: Date.now(), perDay });
+    return perDay;
+  }
+
+  /**
+   * A görünümü: ay içindeki her gün için öğrenci sayısı + ders toplamı.
+   * PII içermez (isim yok). Yalnız date <= bugün günler döner.
+   */
+  async getCalendarMonth(month: string): Promise<CalendarMonthPayload> {
+    const perDay = await this.getMonthSummaries(month);
+    const today = turkishToday();
+
+    const allUuids = new Set<string>();
+    for (const list of perDay.values()) {
+      for (const r of list) allUuids.add(r.individual_uuid);
+    }
+    const individuals = await this.cache.getIndividuals([...allUuids]);
+
+    const days: CalendarMonthDay[] = [];
+    const sortedDates = [...perDay.keys()].sort((a, b) => a.localeCompare(b));
+    for (const date of sortedDates) {
+      const list = perDay.get(date) ?? [];
+      let students = 0;
+      let lessons = 0;
+      for (const r of list) {
+        const ind = individuals.get(r.individual_uuid);
+        if (!ind || ind.individual_type !== 1) continue; // yalnız öğrenci
+        const firstEntry = r.first_entry || null;
+        if (!firstEntry) continue; // giriş zamanı yoksa gerçek devam sayılmaz
+        students++;
+        let lastExit: string | null = r.last_exit || null;
+        if (lastExit && lastExit === firstEntry) lastExit = null;
+        const reference = lastExit
+          ? new Date(lastExit).getTime()
+          : new Date(firstEntry).getTime();
+        lessons += calculateLessons(firstEntry, lastExit, reference).lessons;
+      }
+      days.push({ date, students, lessons, isToday: date === today });
+    }
+
+    return { month, today, days };
   }
 
   private async fetchWeekStats(endDate: string, days: number): Promise<WeekStats> {
