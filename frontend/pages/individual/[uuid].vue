@@ -143,6 +143,9 @@ const proxyPhoto = photoUrl;
         </Transition>
       </section>
 
+      <!-- Devam takvimi (B) -->
+      <IndividualCalendar :uuid="uuid" />
+
       <!-- Bugünkü aktiviteler -->
       <section class="mt-5">
         <div class="px-4 mb-2 flex items-center justify-between">
