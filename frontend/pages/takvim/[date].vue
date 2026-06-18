@@ -67,6 +67,15 @@ const sessions = computed<SessionInput[]>(() => {
 
 const studentCount = computed(() => sessions.value.filter((s) => s.type === 1).length);
 const lessonTotal = computed(() => sessions.value.reduce((sum, s) => sum + s.lessons, 0));
+const staffCount = computed(() => sessions.value.filter((s) => s.type === 2).length);
+
+type DayFilter = 'all' | 'student' | 'staff';
+const filter = ref<DayFilter>('all');
+const visibleSessions = computed(() => {
+  if (filter.value === 'student') return sessions.value.filter((s) => s.type === 1);
+  if (filter.value === 'staff') return sessions.value.filter((s) => s.type === 2);
+  return sessions.value;
+});
 
 onMounted(load);
 </script>
@@ -88,8 +97,31 @@ onMounted(load);
     </header>
 
     <div v-if="snap" class="px-4 mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-      <span><strong class="text-gray-900 dark:text-gray-100">{{ studentCount }}</strong> öğrenci</span>
-      <span><strong class="text-gray-900 dark:text-gray-100">{{ lessonTotal }}</strong> ders</span>
+      <template v-if="filter !== 'staff'">
+        <span><strong class="text-gray-900 dark:text-gray-100">{{ studentCount }}</strong> öğrenci</span>
+        <span><strong class="text-gray-900 dark:text-gray-100">{{ lessonTotal }}</strong> ders</span>
+      </template>
+      <span v-if="filter !== 'student'"><strong class="text-gray-900 dark:text-gray-100">{{ staffCount }}</strong> personel</span>
+    </div>
+
+    <div v-if="snap" class="px-4 mt-3">
+      <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs">
+        <button
+          v-for="f in [
+            { v: 'all', label: 'Hepsi' },
+            { v: 'student', label: 'Birey' },
+            { v: 'staff', label: 'Personel' },
+          ]"
+          :key="f.v"
+          class="px-3 py-1.5 rounded-md font-medium transition-colors"
+          :class="filter === f.v
+            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+            : 'text-gray-500 dark:text-gray-400'"
+          @click="filter = f.v as DayFilter"
+        >
+          {{ f.label }}
+        </button>
+      </div>
     </div>
 
     <div v-if="pending && !snap" class="px-4 mt-4 space-y-2">
@@ -101,7 +133,7 @@ onMounted(load);
       <button class="underline mt-1" @click="load">Tekrar dene</button>
     </div>
     <div v-else-if="snap" class="mt-4">
-      <DayTimeline :sessions="sessions" />
+      <DayTimeline :sessions="visibleSessions" />
     </div>
   </div>
 </template>
