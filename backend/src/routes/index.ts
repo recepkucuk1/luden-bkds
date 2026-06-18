@@ -530,6 +530,49 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
     }
   });
 
+  // ─── Takvim: ay genel görünümü (A) ────────────────────────
+  // `?month=YYYY-MM` opsiyonel — verilmezse bu ay. PII içermez.
+  app.get<{ Querystring: { month?: string } }>('/api/calendar/month', async (req, reply) => {
+    if (!requireConfig(reply)) return;
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+    const month = req.query?.month ?? today.slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      return reply.code(400).send({ error: 'month YYYY-MM formatında olmalı' });
+    }
+    try {
+      const data = await presence.getCalendarMonth(month);
+      const past = month < today.slice(0, 7);
+      reply.header('Cache-Control', past ? 'private, max-age=86400' : 'private, max-age=60');
+      return data;
+    } catch (err) {
+      app.log.error({ err, month }, 'calendar month failed');
+      return reply.code(502).send({ error: 'INNOVA bağlantısı kurulamadı' });
+    }
+  });
+
+  // ─── Takvim: kişi devam ayı (B) ───────────────────────────
+  // `?month=YYYY-MM` opsiyonel. Yalnız bakılan kişinin maskeli adını taşır.
+  app.get<{ Params: { uuid: string }; Querystring: { month?: string } }>(
+    '/api/calendar/individual/:uuid',
+    async (req, reply) => {
+      if (!requireConfig(reply)) return;
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+      const month = req.query?.month ?? today.slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(month)) {
+        return reply.code(400).send({ error: 'month YYYY-MM formatında olmalı' });
+      }
+      try {
+        const data = await presence.getIndividualMonth(req.params.uuid, month);
+        const past = month < today.slice(0, 7);
+        reply.header('Cache-Control', past ? 'private, max-age=86400' : 'private, max-age=60');
+        return data;
+      } catch (err) {
+        app.log.error({ err, uuid: req.params.uuid, month }, 'calendar individual failed');
+        return reply.code(502).send({ error: 'INNOVA bağlantısı kurulamadı' });
+      }
+    },
+  );
+
   // ─── Manuel eşleşmeler ────────────────────────────────────
   // `?date=YYYY-MM-DD` opsiyonel — verilmezse bugün.
   // is_matched_manually=true olan tüm aktivitelerin listesi + benzerlik skoru.
