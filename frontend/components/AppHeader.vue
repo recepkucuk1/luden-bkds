@@ -40,6 +40,15 @@ onUnmounted(() => clearInterval(timer));
           </svg>
         </NuxtLink>
         <NuxtLink
+          to="/takvim"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+          aria-label="Seans Takvimi"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+          </svg>
+        </NuxtLink>
+        <NuxtLink
           to="/istatistik"
           class="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
           aria-label="İstatistikler"
