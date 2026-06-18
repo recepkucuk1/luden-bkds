@@ -81,5 +81,25 @@ const svc = new PresenceService(fakeAdapter as any, fakeCache as any);
   console.log('✓ getCalendarMonth');
 }
 
+// ─── getIndividualMonth ───────────────────────────────────
+{
+  const res = await svc.getIndividualMonth('A', '2025-03');
+  assert.equal(res.uuid, 'A');
+  assert.equal(res.fullName, 'AD-A');
+  assert.equal(res.individualType, 1);
+  assert.equal(res.days.length, 2, 'A yalnız 2 gün geldi');
+
+  const d3 = res.days.find((d) => d.date === '2025-03-03')!;
+  assert.equal(d3.lessons, 2);
+  assert.equal(d3.durationMinutes, 95);
+  assert.equal(d3.lastExit, '2025-03-03T10:35:00+03:00');
+
+  const d4 = res.days.find((d) => d.date === '2025-03-04')!;
+  assert.equal(d4.lessons, 0);
+  assert.equal(d4.lastExit, null, 'sahte çıkış → null');
+  assert.equal(d4.durationMinutes, null);
+  console.log('✓ getIndividualMonth');
+}
+
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('✓ Task 1 testleri geçti');

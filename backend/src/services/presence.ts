@@ -587,6 +587,50 @@ export class PresenceService {
     return { month, today, days };
   }
 
+  /**
+   * B görünümü: tek bireyin ay içinde geldiği günler + ders/süre.
+   * Yalnız geldiği günler döner; gelmediği günleri frontend boş bırakır.
+   * Yalnız bakılan kişinin maskeli adını taşır — TC/engel kodu yok.
+   */
+  async getIndividualMonth(uuid: string, month: string): Promise<IndividualMonthPayload> {
+    const perDay = await this.getMonthSummaries(month);
+    const ind = await this.cache.getIndividual(uuid).catch(() => null);
+    const individualType = ind?.individual_type ?? 1;
+
+    const days: IndividualMonthDay[] = [];
+    const sortedDates = [...perDay.keys()].sort((a, b) => a.localeCompare(b));
+    for (const date of sortedDates) {
+      const r = (perDay.get(date) ?? []).find((x) => x.individual_uuid === uuid);
+      if (!r) continue; // o gün gelmedi
+      const firstEntry = r.first_entry || null;
+      if (!firstEntry) continue;
+      let lastExit: string | null = r.last_exit || null;
+      if (lastExit && lastExit === firstEntry) lastExit = null;
+
+      const durationMinutes = lastExit
+        ? Math.max(0, Math.floor((new Date(lastExit).getTime() - new Date(firstEntry).getTime()) / 60000))
+        : null;
+
+      let lessons = 0;
+      if (individualType === 1) {
+        const reference = lastExit
+          ? new Date(lastExit).getTime()
+          : new Date(firstEntry).getTime();
+        lessons = calculateLessons(firstEntry, lastExit, reference).lessons;
+      }
+
+      days.push({ date, lessons, firstEntry, lastExit, durationMinutes });
+    }
+
+    return {
+      uuid,
+      month,
+      fullName: ind?.full_name ?? '—',
+      individualType,
+      days,
+    };
+  }
+
   private async fetchWeekStats(endDate: string, days: number): Promise<WeekStats> {
     const dates: string[] = [];
     for (let i = days - 1; i >= 0; i--) {
