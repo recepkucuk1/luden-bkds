@@ -6,6 +6,8 @@
  * /pair, /setup: middleware'i atla (her zaman erişilebilir).
  */
 
+import { getBackendPort } from '~/composables/useBkds';
+
 export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path === '/setup') return;
   if (to.path === '/pair') return;
@@ -18,8 +20,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
     loc.hostname === 'localhost' ||
     loc.hostname === '127.0.0.1';
 
+  // Yerelde backend 8787 doluysa 8788+'a düşebilir; backend-port eklentisi
+  // açılışta doğru portu bulur. Sabit 8787 kalırsa kontrol yanlış servise gider.
   const backendUrl = isLocal
-    ? 'http://localhost:8787'
+    ? `http://localhost:${getBackendPort()}`
     : `${loc.protocol}//${loc.hostname}:8787`;
 
   // 1. Telefon ise token kontrolü
