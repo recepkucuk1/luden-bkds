@@ -6,6 +6,9 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   // SPA modu — Tauri webview'i static dosyalardan açacak
   ssr: false,
+  // JS paketi ve backend port keşfi bitene kadar boş beyaz sayfa yerine marka
+  // renginde "Başlatılıyor…" ekranı (Vue mount olunca kendiliğinden kalkar)
+  spaLoadingTemplate: 'spa-loading-template.html',
   modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
 
   css: ['~/assets/css/main.css'],
@@ -82,6 +85,13 @@ export default defineNuxtConfig({
 
   pwa: {
     registerType: 'autoUpdate',
+    // SW kaydını modül yapmasın — plugins/sw-register.client.ts yapıyor.
+    // Tauri (Windows) webview'ında SW istekleri Tauri'nin handler'ını atlayıp
+    // gerçek ağa (127.0.0.1:80) çıkıyor; oradaki bir web sunucusunun 308'i
+    // WebView2 önbelleğine yazılınca uygulama ERR_SSL_PROTOCOL_ERROR veriyor.
+    // Bu yüzden SW yalnızca tarayıcı/PWA'da kaydedilir.
+    injectRegister: false,
+    client: { registerPlugin: false, installPrompt: false, periodicSyncForUpdates: 0 },
     manifest: {
       id: '/',
       name: 'BRY Takip',
@@ -114,6 +124,10 @@ export default defineNuxtConfig({
       // Offline shell — backend kopukken (Mac uyandı / WiFi koptu) en azından
       // marka kabuğu görünsün, beyaz sayfa olmasın.
       navigateFallback: '/offline.html',
+      // registerPlugin kapalıyken modül bunları otomatik açmıyor; autoUpdate
+      // davranışı (yeni SW hemen devralsın) aynen kalsın diye elle açık.
+      clientsClaim: true,
+      skipWaiting: true,
       // Bilinen sayfa rotaları için fallback'i atla (yeni route'lar offline iken
       // navigate edilirse fallback kullanılır)
       navigateFallbackDenylist: [/^\/api\//, /^\/ws/, /^\/healthz/],

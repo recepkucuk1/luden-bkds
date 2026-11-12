@@ -30,6 +30,9 @@ use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::{CommandEvent, CommandChild};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::Duration;
+use tauri::webview::PageLoadEvent;
 use std::path::PathBuf;
 use std::io::Write;
 
@@ -89,6 +92,121 @@ impl Drop for ServerProcess {
     }
 }
 
+// ── Beyaz ekran bekçisi ─────────────────────────────────────────────
+// Windows'ta WebView2 profiline önbelleğe yazılmış bir yönlendirme (ör. aynı
+// makinedeki web sunucusunun 80. porttaki 308'i) ya da bozuk bir service worker
+// girerse pencere beyaz kalır. Uygulama kendi kendini toparlayamaz, kullanıcı
+// da log ya da ekran görüntüsü gönderemeyebilir.
+//
+// Her sayfa yüklemesi başladığında bekçi kurulur. Ön yüz JS paketi çalışınca
+// `ui_ready` komutunu çağırır (frontend/plugins/00.ui-ready.client.ts). Süre
+// dolduğunda sinyal gelmemişse WebView2'nin HTTP önbelleği + service worker'ları
+// + Cache Storage'ı silinir ve uygulama kökten yeniden yüklenir.
+//
+// localStorage SİLİNMEZ: lisans anahtarı ve makine kimliği orada; silinirse
+// kurum lisanssız kalır ve yeniden doğrulamada WRONG_MACHINE alır.
+// Onarım her oturumda bir kez denenir (döngüye girmesin).
+static UI_READY: AtomicBool = AtomicBool::new(false);
+static LOAD_GEN: AtomicU64 = AtomicU64::new(0);
+static HEAL_ATTEMPTED: AtomicBool = AtomicBool::new(false);
+const UI_READY_TIMEOUT: Duration = Duration::from_secs(25);
+
+#[tauri::command]
+fn ui_ready() {
+    if !UI_READY.swap(true, Ordering::SeqCst) {
+        tlog("UI hazır sinyali alındı");
+    }
+}
+
+fn arm_ui_watchdog(app: AppHandle, reset_ready: bool) {
+    if reset_ready {
+        UI_READY.store(false, Ordering::SeqCst);
+    }
+    let gen = LOAD_GEN.fetch_add(1, Ordering::SeqCst) + 1;
+    std::thread::spawn(move || {
+        std::thread::sleep(UI_READY_TIMEOUT);
+        // Bu arada yeni bir yükleme başladıysa onun bekçisi karar verir
+        if LOAD_GEN.load(Ordering::SeqCst) != gen || UI_READY.load(Ordering::SeqCst) {
+            return;
+        }
+        if HEAL_ATTEMPTED.swap(true, Ordering::SeqCst) {
+            tlog("[bekçi] UI yine açılmadı; onarım bu oturumda zaten denendi, tekrar denenmiyor");
+            return;
+        }
+        tlog("[bekçi] UI 25 sn içinde açılmadı → önbellek + service worker temizlenip yeniden yükleniyor");
+        heal_webview(&app);
+    });
+}
+
+/// Uygulamayı kök adresten yeniden yükler. `reload()` yerine `navigate`:
+/// önbellekteki yönlendirme yüzünden pencere https:// hata sayfasında kalmış
+/// olabilir; reload o hatalı adresi tekrar ister.
+fn reload_app_root(app: &AppHandle) {
+    let root = if cfg!(windows) {
+        "http://tauri.localhost/"
+    } else {
+        "tauri://localhost/"
+    };
+    if let (Some(window), Ok(url)) = (app.get_webview_window("main"), root.parse::<tauri::Url>()) {
+        if let Err(e) = window.navigate(url) {
+            tlog(&format!("[bekçi] yeniden yükleme başarısız: {}", e));
+        }
+    }
+}
+
+#[cfg(windows)]
+fn heal_webview(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("main") else { return };
+    let app_for_cb = app.clone();
+    let res = window.with_webview(move |wv| {
+        use webview2_com::ClearBrowsingDataCompletedHandler;
+        use webview2_com::Microsoft::Web::WebView2::Win32::{
+            ICoreWebView2Profile2, ICoreWebView2_13,
+            COREWEBVIEW2_BROWSING_DATA_KINDS_CACHE_STORAGE,
+            COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE,
+            COREWEBVIEW2_BROWSING_DATA_KINDS_SERVICE_WORKERS,
+        };
+        use windows_core::Interface;
+
+        let app_done = app_for_cb.clone();
+        let started = unsafe {
+            (|| -> windows_core::Result<()> {
+                let profile = wv
+                    .controller()
+                    .CoreWebView2()?
+                    .cast::<ICoreWebView2_13>()?
+                    .Profile()?
+                    .cast::<ICoreWebView2Profile2>()?;
+                let kinds = COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE
+                    | COREWEBVIEW2_BROWSING_DATA_KINDS_SERVICE_WORKERS
+                    | COREWEBVIEW2_BROWSING_DATA_KINDS_CACHE_STORAGE;
+                profile.ClearBrowsingData(
+                    kinds,
+                    &ClearBrowsingDataCompletedHandler::create(Box::new(move |result| {
+                        tlog(&format!("[bekçi] temizlik bitti, başarılı: {}", result.is_ok()));
+                        reload_app_root(&app_done);
+                        Ok(())
+                    })),
+                )
+            })()
+        };
+        if let Err(e) = started {
+            // Eski WebView2 runtime (Profile2 yok) vb. — en azından kökten yükle
+            tlog(&format!("[bekçi] temizlik başlatılamadı: {}", e));
+            reload_app_root(&app_for_cb);
+        }
+    });
+    if let Err(e) = res {
+        tlog(&format!("[bekçi] webview'e erişilemedi: {}", e));
+    }
+}
+
+// macOS/Linux'ta WebView2 önbellek sorunu yok; kökten yeniden yüklemek yeter.
+#[cfg(not(windows))]
+fn heal_webview(app: &AppHandle) {
+    reload_app_root(app);
+}
+
 /// Pencereyi göster + odakla (tray menüsünden, --auto-start sonrası vs.)
 fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -117,6 +235,12 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_notification::init())
         .manage(Arc::clone(&server_process))
+        .invoke_handler(tauri::generate_handler![ui_ready])
+        .on_page_load(|webview, payload| {
+            if payload.event() == PageLoadEvent::Started {
+                arm_ui_watchdog(webview.app_handle().clone(), true);
+            }
+        })
         .setup(move |app| {
             let resource_dir = app
                 .path()
@@ -276,6 +400,11 @@ pub fn run() {
             if !started_via_autostart {
                 show_main_window(&app.handle());
             }
+
+            // İlk yükleme için de bekçi kur: sayfa yükleme olayı setup'tan önce
+            // gelmiş ya da hiç gelmemiş olabilir. UI_READY'yi sıfırlamaz; yeni
+            // bir yükleme olayı gelirse onun bekçisi bunu geçersiz kılar.
+            arm_ui_watchdog(app.handle().clone(), false);
 
             Ok(())
         })
